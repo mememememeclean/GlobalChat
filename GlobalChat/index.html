@@ -1,0 +1,4803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>GlobalChat • Lumina</title>
+    <link rel="icon" type="image/png" href="./assets/logoo.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: #0a0a1a;
+            position: relative;
+        }
+
+        /* Context Menu */
+        .context-menu {
+            position: fixed;
+            background: rgba(20, 15, 40, 0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(167, 139, 250, 0.3);
+            border-radius: 16px;
+            padding: 8px;
+            min-width: 200px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            z-index: 2500;
+            display: none;
+        }
+
+        .context-menu.show {
+            display: block;
+            animation: fadeInUp 0.2s ease-out;
+        }
+
+        .context-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+        }
+
+        .context-menu-item:hover {
+            background: rgba(167, 139, 250, 0.2);
+        }
+
+        .context-menu-item.danger {
+            color: #fca5a5;
+        }
+
+        .context-menu-item.danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .context-menu-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.08);
+            margin: 8px 0;
+        }
+
+        /* Theme-specific scrollbar colors */
+        .messages-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages-area::-webkit-scrollbar-thumb {
+            background: rgba(167, 139, 250, 0.5);
+            border-radius: 20px;
+        }
+
+        .messages-area::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .settings-panel::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .settings-panel::-webkit-scrollbar-thumb {
+            background: rgba(167, 139, 250, 0.5);
+            border-radius: 20px;
+        }
+
+        .groups-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .groups-list::-webkit-scrollbar-thumb {
+            background: rgba(167, 139, 250, 0.5);
+            border-radius: 20px;
+        }
+
+        .file-preview-list::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .file-preview-list::-webkit-scrollbar-thumb {
+            background: rgba(167, 139, 250, 0.5);
+            border-radius: 10px;
+        }
+
+        .theme-options::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .theme-options::-webkit-scrollbar-thumb {
+            background: rgba(167, 139, 250, 0.5);
+            border-radius: 10px;
+        }
+
+        .file-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .file-list::-webkit-scrollbar-thumb {
+            background: rgba(167, 139, 250, 0.5);
+            border-radius: 10px;
+        }
+
+        /* Enhanced Animated Background */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1040 25%, #0d0d2b 50%, #1a0d35 75%, #0a0a1a 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 0%; }
+            25% { background-position: 100% 0%; }
+            50% { background-position: 100% 100%; }
+            75% { background-position: 0% 100%; }
+            100% { background-position: 0% 0%; }
+        }
+
+        /* Stars Animation */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0;
+            animation: twinkle 3s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.5); }
+        }
+
+        /* Enhanced Floating Orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            z-index: -1;
+            animation: float 20s ease-in-out infinite, pulse 8s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        .orb-1 { 
+            width: 400px; 
+            height: 400px; 
+            background: radial-gradient(circle, #7c3aed, #3b0764); 
+            top: -100px; 
+            left: -100px; 
+            animation: float 20s ease-in-out infinite, pulse 8s ease-in-out infinite, colorShift 12s ease-in-out infinite;
+        }
+        
+        .orb-2 { 
+            width: 500px; 
+            height: 500px; 
+            background: radial-gradient(circle, #06b6d4, #164e63); 
+            bottom: -150px; 
+            right: -150px; 
+            animation: float 25s ease-in-out infinite reverse, pulse 10s ease-in-out infinite, colorShift2 15s ease-in-out infinite;
+        }
+        
+        .orb-3 { 
+            width: 350px; 
+            height: 350px; 
+            background: radial-gradient(circle, #ec4899, #831843); 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            animation: float 30s ease-in-out infinite, pulse 12s ease-in-out infinite, colorShift3 18s ease-in-out infinite;
+        }
+
+        .orb-4 {
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, #f59e0b, #78350f);
+            top: 20%;
+            right: 10%;
+            animation: float 22s ease-in-out infinite, pulse 9s ease-in-out infinite;
+        }
+
+        .orb-5 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, #10b981, #064e3b);
+            bottom: 10%;
+            left: 15%;
+            animation: float 28s ease-in-out infinite reverse, pulse 11s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(50px, -50px) scale(1.15); }
+            66% { transform: translate(-30px, 30px) scale(0.9); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.6; }
+        }
+
+        @keyframes colorShift {
+            0%, 100% { background: radial-gradient(circle, #7c3aed, #3b0764); }
+            50% { background: radial-gradient(circle, #a78bfa, #5b21b6); }
+        }
+
+        @keyframes colorShift2 {
+            0%, 100% { background: radial-gradient(circle, #06b6d4, #164e63); }
+            50% { background: radial-gradient(circle, #22d3ee, #0891b2); }
+        }
+
+        @keyframes colorShift3 {
+            0%, 100% { background: radial-gradient(circle, #ec4899, #831843); }
+            50% { background: radial-gradient(circle, #f472b6, #be185d); }
+        }
+
+        /* Aurora Effect */
+        .aurora {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.15;
+            background: linear-gradient(45deg, 
+                transparent 0%,
+                rgba(124, 58, 237, 0.3) 25%,
+                transparent 50%,
+                rgba(6, 182, 212, 0.3) 75%,
+                transparent 100%);
+            background-size: 200% 200%;
+            animation: auroraMove 20s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes auroraMove {
+            0%, 100% { background-position: 0% 0%; }
+            50% { background-position: 100% 100%; }
+        }
+
+        .app-container {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            max-width: 1400px;
+            height: 90vh;
+        }
+
+        /* Groups Sidebar */
+        .groups-sidebar {
+            width: 280px;
+            background: rgba(15, 10, 30, var(--bg-opacity, 0.7));
+            backdrop-filter: blur(25px);
+            border-radius: 30px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            animation: slideInLeft 0.6s ease-out;
+        }
+
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .groups-header {
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 20px;
+        }
+
+        .groups-header h2 {
+            color: white;
+            font-size: 1.3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, #c4b5fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .groups-header p {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+
+        .groups-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .group-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            animation: groupAppear 0.4s ease-out;
+        }
+
+        @keyframes groupAppear {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .group-item:hover {
+            background: rgba(167, 139, 250, 0.1);
+            border-color: rgba(167, 139, 250, 0.3);
+            transform: translateX(5px);
+        }
+
+        .group-item.active {
+            background: rgba(167, 139, 250, 0.15);
+            border-color: #a78bfa;
+        }
+
+        .group-name {
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .group-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .group-lang {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .group-lang span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+        }
+
+        .group-count {
+            color: #a78bfa;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Online Users Section */
+        .online-users-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .online-users-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .online-users-title {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .online-users-count {
+            color: #10b981;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .online-users-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .online-user-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .online-user-item:hover {
+            background: rgba(167, 139, 250, 0.1);
+        }
+
+        .online-user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #a78bfa, #7c3aed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .online-user-name {
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 500;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .online-user-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 10px #10b981;
+        }
+
+        /* Profile Section in Sidebar */
+        .profile-section {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .profile-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .profile-info:hover {
+            background: rgba(167, 139, 250, 0.1);
+        }
+
+        .profile-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #a78bfa, #7c3aed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: white;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .profile-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .profile-name {
+            color: white;
+            font-weight: 600;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .profile-status {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.75rem;
+            margin-top: 2px;
+        }
+
+        .chat-container {
+            flex: 1;
+            background: rgba(15, 10, 30, var(--bg-opacity, 0.7));
+            backdrop-filter: blur(25px);
+            border-radius: 30px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            animation: containerGlow 4s ease-in-out infinite;
+        }
+
+        @keyframes containerGlow {
+            0%, 100% { box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1) inset; }
+            50% { box-shadow: 0 30px 60px rgba(124, 58, 237, 0.3), 0 0 0 1px rgba(167, 139, 250, 0.2) inset; }
+        }
+
+        /* Header */
+        .chat-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.1);
+            animation: slideDown 0.6s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .globe-icon {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #a78bfa, #7c3aed);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px rgba(124, 58, 237, 0.4);
+            animation: rotateGlow 4s ease-in-out infinite;
+        }
+
+        @keyframes rotateGlow {
+            0%, 100% { transform: rotate(0deg); box-shadow: 0 10px 25px rgba(124, 58, 237, 0.4); }
+            50% { transform: rotate(5deg); box-shadow: 0 15px 35px rgba(167, 139, 250, 0.6); }
+        }
+
+        .globe-icon svg {
+            width: 24px;
+            height: 24px;
+            color: white;
+            animation: iconSpin 8s linear infinite;
+        }
+
+        @keyframes iconSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .header-title h1 {
+            color: white;
+            font-size: 1.6rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, #c4b5fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: titleShine 3s ease-in-out infinite;
+        }
+
+        @keyframes titleShine {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.2); }
+        }
+
+        .header-title p {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .online-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 40px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            animation: onlinePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes onlinePulse {
+            0%, 100% { border-color: rgba(16, 185, 129, 0.2); }
+            50% { border-color: rgba(16, 185, 129, 0.4); }
+        }
+
+        .pulse-dot {
+            width: 10px;
+            height: 10px;
+            background: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 20px #10b981;
+            animation: pulseDot 1.5s infinite;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.2); }
+        }
+
+        .online-count {
+            color: #a7f3d0;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .settings-btn {
+            width: 42px;
+            height: 42px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.7);
+            transition: all 0.3s;
+        }
+
+        .settings-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #a78bfa;
+            transform: rotate(45deg) scale(1.1);
+        }
+
+        .settings-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Current Group Indicator */
+        .current-group {
+            padding: 10px 25px;
+            background: rgba(0, 0, 0, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .current-group-label {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.8rem;
+        }
+
+        .current-group-name {
+            color: #a78bfa;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* Messages Area */
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .date-divider {
+            display: flex;
+            justify-content: center;
+            margin: 16px 0 8px;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .date-divider span {
+            background: rgba(124, 58, 237, 0.2);
+            color: #c4b5fd;
+            padding: 6px 20px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            text-transform: uppercase;
+        }
+
+        /* Mention Suggestions Dropdown */
+.mention-suggestions {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    margin-bottom: 8px;
+    background: rgba(20, 15, 40, 0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(167, 139, 250, 0.3);
+    border-radius: 16px;
+    padding: 8px;
+    min-width: 200px;
+    max-height: 250px;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    display: none;
+}
+
+.mention-suggestions.show {
+    display: block;
+    animation: fadeInUp 0.2s ease-out;
+}
+
+.mention-suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: white;
+}
+
+.mention-suggestion-item:hover,
+.mention-suggestion-item.active {
+    background: rgba(167, 139, 250, 0.2);
+}
+
+.mention-suggestion-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a78bfa, #7c3aed);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.mention-suggestion-name {
+    flex: 1;
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+        
+
+        .message-wrapper {
+            display: flex;
+            gap: 12px;
+            animation: messageSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+        }
+
+        .message-wrapper.mentioned {
+            background: rgba(245, 158, 11, 0.1);
+            border-radius: 18px;
+            padding: 8px;
+            margin: -8px;
+            border-left: 3px solid #f59e0b;
+            animation: mentionPulse 1s ease-in-out;
+        }
+
+        @keyframes mentionPulse {
+            0%, 100% { background: rgba(245, 158, 11, 0.1); }
+            50% { background: rgba(245, 158, 11, 0.2); }
+        }
+
+        .message-wrapper.self {
+            flex-direction: row-reverse;
+        }
+
+        @keyframes messageSlideIn {
+            0% { opacity: 0; transform: translateY(20px) scale(0.9); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #a78bfa, #7c3aed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1rem;
+            color: white;
+            flex-shrink: 0;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+        }
+
+        .message-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .message-content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message-bubble {
+            max-width: fit-content;
+            padding: 12px 16px;
+            border-radius: 18px;
+            background: rgba(30, 25, 50, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(15px);
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            transition: all 0.3s;
+        }
+
+        .message-wrapper.self .message-bubble {
+            background: rgba(124, 58, 237, 0.2);
+            margin-left: auto;
+        }
+
+        .message-bubble:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .message-sender {
+            font-weight: 700;
+            font-size: 0.95rem;
+            background: linear-gradient(135deg, #c4b5fd, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            cursor: pointer;
+        }
+
+        .message-sender:hover {
+            text-decoration: underline;
+        }
+
+        .message-time {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.35);
+            margin-left: auto;
+        }
+
+        .message-content {
+            color: rgba(255, 255, 255, 0.95);
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .message-content .mention {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-weight: 600;
+            display: inline-block;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .message-content .mention:hover {
+            background: rgba(245, 158, 11, 0.3);
+        }
+
+        .message-content.collapsed {
+            max-height: 150px;
+            overflow: hidden;
+            mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+        }
+
+        .expand-btn {
+            margin-top: 10px;
+            padding: 6px 14px;
+            background: rgba(167, 139, 250, 0.15);
+            border: 1px solid rgba(167, 139, 250, 0.2);
+            color: #c4b5fd;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+
+        .expand-btn:hover {
+            background: rgba(167, 139, 250, 0.25);
+            transform: scale(1.05);
+        }
+
+        /* File Attachment */
+        .file-attachment {
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            animation: fileAppear 0.5s ease-out;
+        }
+
+        @keyframes fileAppear {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(167, 139, 250, 0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #a78bfa;
+            font-size: 20px;
+        }
+
+        .file-details {
+            flex: 1;
+        }
+
+        .file-name {
+            color: white;
+            font-weight: 600;
+            font-size: 0.85rem;
+            word-break: break-all;
+        }
+
+        .file-size {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.7rem;
+            margin-top: 3px;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .file-btn {
+            padding: 6px 12px;
+            background: rgba(167, 139, 250, 0.15);
+            border: 1px solid rgba(167, 139, 250, 0.2);
+            border-radius: 8px;
+            color: #c4b5fd;
+            font-size: 0.75rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s;
+        }
+
+        .file-btn:hover {
+            background: rgba(167, 139, 250, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .file-preview {
+            margin-top: 12px;
+            max-height: 250px;
+            overflow: auto;
+            border-radius: 8px;
+        }
+
+        .file-preview img {
+            max-width: 100%;
+            max-height: 250px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .file-preview img:hover {
+            transform: scale(1.02);
+        }
+
+        .file-preview pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: white;
+        }
+
+        .system-message {
+            text-align: center;
+            padding: 8px;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .system-message span {
+            background: rgba(124, 58, 237, 0.2);
+            color: #c4b5fd;
+            padding: 6px 20px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            border: 1px solid rgba(124, 58, 237, 0.25);
+        }
+
+        /* Context Menu */
+        .context-menu {
+            position: fixed;
+            background: rgba(20, 15, 40, 0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(167, 139, 250, 0.3);
+            border-radius: 16px;
+            padding: 8px;
+            min-width: 200px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            z-index: 2500;
+            display: none;
+        }
+
+        .context-menu.show {
+            display: block;
+            animation: fadeInUp 0.2s ease-out;
+        }
+
+        .context-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+        }
+
+        .context-menu-item:hover {
+            background: rgba(167, 139, 250, 0.2);
+        }
+
+        .context-menu-item.danger {
+            color: #fca5a5;
+        }
+
+        .context-menu-item.danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .context-menu-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.08);
+            margin: 8px 0;
+        }
+
+        /* User Profile Modal */
+        .user-profile-modal .modal-content {
+            max-width: 450px;
+        }
+
+        .user-profile-header {
+            position: relative;
+            height: 120px;
+            border-radius: 16px;
+            margin-bottom: 60px;
+        }
+
+        .user-profile-banner {
+            width: 100%;
+            height: 100%;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #a78bfa, #7c3aed);
+        }
+
+        .user-profile-avatar {
+            position: absolute;
+            bottom: -40px;
+            left: 24px;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 4px solid rgba(20, 15, 40, 0.95);
+            background: linear-gradient(135deg, #a78bfa, #7c3aed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: white;
+            overflow: hidden;
+        }
+
+        .user-profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-profile-info {
+            padding: 20px;
+        }
+
+        .user-profile-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .user-profile-bio {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+        }
+
+        .user-profile-details {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .user-profile-detail {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+        }
+
+        .user-profile-detail-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(167, 139, 250, 0.15);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #a78bfa;
+        }
+
+        .user-profile-detail-content {
+            flex: 1;
+        }
+
+        .user-profile-detail-label {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .user-profile-detail-value {
+            color: white;
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+
+        .user-profile-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .user-profile-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .user-profile-btn.primary {
+            background: linear-gradient(135deg, #a78bfa, #7c3aed);
+            color: white;
+        }
+
+        .user-profile-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(124, 58, 237, 0.4);
+        }
+
+        .user-profile-btn.secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .user-profile-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Profile Theme Options */
+        .profile-theme-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .profile-theme-option {
+            aspect-ratio: 1;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .profile-theme-option:hover {
+            transform: scale(1.05);
+        }
+
+        .profile-theme-option.active {
+            border-color: white;
+        }
+
+        .profile-theme-option.purple { background: linear-gradient(135deg, #7c3aed, #3b0764); }
+        .profile-theme-option.sunset { background: linear-gradient(135deg, #f97316, #b91c1c); }
+        .profile-theme-option.ocean { background: linear-gradient(135deg, #06b6d4, #1e3a8a); }
+        .profile-theme-option.forest { background: linear-gradient(135deg, #10b981, #064e3b); }
+        .profile-theme-option.rose { background: linear-gradient(135deg, #ec4899, #831843); }
+        .profile-theme-option.midnight { background: linear-gradient(135deg, #1e1b4b, #312e81); }
+        .profile-theme-option.cherry { background: linear-gradient(135deg, #ef4444, #7f1d1d); }
+        .profile-theme-option.mint { background: linear-gradient(135deg, #34d399, #065f46); }
+
+        /* Notification Toast */
+        .notification-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(20, 15, 40, 0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 16px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            z-index: 3000;
+            animation: slideInToast 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            max-width: 350px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .notification-toast:hover {
+            transform: scale(1.02);
+        }
+
+        @keyframes slideInToast {
+            from { opacity: 0; transform: translateX(100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .notification-toast.fade-out {
+            animation: fadeOutToast 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeOutToast {
+            to { opacity: 0; transform: translateX(100px); }
+        }
+
+        .notification-icon {
+            font-size: 24px;
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-title {
+            color: #fbbf24;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+
+        .notification-message {
+            color: white;
+            font-size: 0.85rem;
+        }
+
+        .notification-close {
+            color: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            padding: 4px;
+            transition: all 0.2s;
+        }
+
+        .notification-close:hover {
+            color: white;
+        }
+
+        /* Drag & Drop Overlay */
+        .drag-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(124, 58, 237, 0.2);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            border: 3px dashed #a78bfa;
+            border-radius: 30px;
+            pointer-events: none;
+        }
+
+        .drag-overlay.active {
+            display: flex;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .drag-content {
+            text-align: center;
+            color: white;
+        }
+
+        .drag-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .drag-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        /* File Preview Bar */
+        .file-preview-bar {
+            padding: 12px 25px;
+            background: rgba(0, 0, 0, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            display: none;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .file-preview-bar.show {
+            display: block;
+        }
+
+        .file-preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .file-preview-title {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .clear-files-btn {
+            padding: 4px 12px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            border-radius: 20px;
+            color: #fcd34d;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .clear-files-btn:hover {
+            background: rgba(245, 158, 11, 0.2);
+        }
+
+        .file-preview-list {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+
+        .file-preview-item {
+            position: relative;
+            min-width: 80px;
+            max-width: 100px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-preview-item:hover {
+            background: rgba(167, 139, 250, 0.1);
+            border-color: rgba(167, 139, 250, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .file-preview-thumb {
+            width: 100%;
+            height: 60px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.2);
+            margin-bottom: 6px;
+            overflow: hidden;
+        }
+
+        .file-preview-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .file-preview-thumb .file-icon-small {
+            font-size: 28px;
+        }
+
+        .file-preview-name {
+            color: white;
+            font-size: 0.7rem;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-preview-size {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.6rem;
+            text-align: center;
+            margin-top: 2px;
+        }
+
+        .file-remove-btn {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 20px;
+            height: 20px;
+            background: rgba(245, 158, 11, 0.9);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .file-preview-item:hover .file-remove-btn {
+            opacity: 1;
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 20px 25px;
+            background: rgba(0, 0, 0, 0.15);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            animation: slideUp 0.6s ease-out;
+            position: relative;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .input-container {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .message-input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .message-input {
+            width: 100%;
+            padding: 12px 55px 12px 18px;
+            background: rgba(20, 15, 40, 0.5);
+            border: 1.5px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            color: white;
+            font-size: 0.95rem;
+            outline: none;
+            resize: none;
+            max-height: 120px;
+            transition: all 0.3s;
+        }
+
+        .message-input:focus {
+            border-color: #a78bfa;
+            box-shadow: 0 0 20px rgba(167, 139, 250, 0.3);
+        }
+
+        .input-actions {
+            position: absolute;
+            right: 5px;
+            bottom: 5px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .attach-btn {
+            width: 38px;
+            height: 38px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.6);
+            transition: all 0.3s;
+        }
+
+        .attach-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #a78bfa;
+            transform: scale(1.1);
+        }
+
+        .send-button {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, #a78bfa, #7c3aed);
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4);
+            transition: all 0.3s;
+        }
+
+        .send-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 30px rgba(124, 58, 237, 0.6);
+        }
+
+        .send-button svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+        }
+
+        .char-counter {
+            position: absolute;
+            left: 18px;
+            bottom: -20px;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .typing-indicator {
+            padding: 6px 28px 4px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+            min-height: 28px;
+            animation: typingFade 1s ease-in-out infinite;
+        }
+
+        @keyframes typingFade {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 255, 255, 0.25);
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            opacity: 0.3;
+            margin-bottom: 15px;
+        }
+
+        /* Settings Panel */
+        .settings-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .settings-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: rgba(15, 10, 35, 0.98);
+            backdrop-filter: blur(35px);
+            z-index: 1000;
+            transition: right 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            padding: 24px 20px;
+            border-left: 1px solid rgba(255, 255, 255, 0.08);
+            overflow-y: auto;
+        }
+
+        .settings-panel.open {
+            right: 0;
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .settings-header h2 {
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .close-settings {
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .close-settings:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(90deg);
+        }
+
+        .settings-section {
+            margin-bottom: 24px;
+            animation: slideInRight 0.5s ease-out;
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .settings-section h3 {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 14px;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .setting-label {
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .toggle-switch {
+            width: 48px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 40px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: linear-gradient(135deg, #a78bfa, #7c3aed);
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            transition: left 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .toggle-switch.active .toggle-slider {
+            left: 26px;
+        }
+
+        .theme-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .theme-option {
+            aspect-ratio: 1;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .theme-option:hover {
+            transform: scale(1.1);
+        }
+
+        .theme-option.active {
+            border-color: white;
+        }
+
+        .theme-option.purple { background: linear-gradient(135deg, #7c3aed, #3b0764); }
+        .theme-option.sunset { background: linear-gradient(135deg, #f97316, #b91c1c); }
+        .theme-option.ocean { background: linear-gradient(135deg, #06b6d4, #1e3a8a); }
+        .theme-option.forest { background: linear-gradient(135deg, #10b981, #064e3b); }
+        .theme-option.rose { background: linear-gradient(135deg, #ec4899, #831843); }
+        .theme-option.midnight { background: linear-gradient(135deg, #1e1b4b, #312e81); }
+        .theme-option.cherry { background: linear-gradient(135deg, #ef4444, #7f1d1d); }
+        .theme-option.mint { background: linear-gradient(135deg, #34d399, #065f46); }
+        .theme-option.null { background: linear-gradient(135deg, #1a1a1a, #0a0a0a); }
+        .theme-option.void { background: linear-gradient(135deg, #0f0f1a, #1a0a2e); }
+        .theme-option.star { background: linear-gradient(135deg, #1a1a2e, #16213e); }
+        .theme-option.nebula { background: linear-gradient(135deg, #2d1b69, #5b21b6); }
+
+        .theme-check {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 1.2rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .theme-option.active .theme-check {
+            opacity: 1;
+        }
+
+        .language-selector {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .lang-btn {
+            flex: 1;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .lang-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .lang-btn.active {
+            background: rgba(167, 139, 250, 0.2);
+            border-color: #a78bfa;
+            color: white;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .slider {
+            flex: 1;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .slider-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #a78bfa, #7c3aed);
+            border-radius: 4px;
+            width: 70%;
+            pointer-events: none;
+        }
+
+        .slider-value {
+            color: white;
+            font-size: 0.85rem;
+            min-width: 45px;
+        }
+
+        .file-list {
+            margin-top: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .file-list-item {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            animation: slideInRight 0.3s ease-out;
+        }
+
+        .file-list-info {
+            flex: 1;
+        }
+
+        .file-list-name {
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        .file-list-meta {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.65rem;
+            margin-top: 2px;
+        }
+
+        .file-list-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .file-list-btn {
+            padding: 5px 10px;
+            background: rgba(167, 139, 250, 0.15);
+            border: none;
+            border-radius: 6px;
+            color: #c4b5fd;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-list-btn:hover {
+            background: rgba(167, 139, 250, 0.25);
+            transform: scale(1.05);
+        }
+
+        .clear-btn {
+            width: 100%;
+            padding: 14px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.25);
+            border-radius: 14px;
+            color: #fcd34d;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+            transition: all 0.3s;
+        }
+
+        .clear-btn:hover {
+            background: rgba(245, 158, 11, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .danger-btn {
+            width: 100%;
+            padding: 14px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 14px;
+            color: #fca5a5;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+            transition: all 0.3s;
+        }
+
+        .danger-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .easter-egg-trigger {
+            width: 100%;
+            padding: 14px;
+            background: transparent;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-align: center;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+
+        .easter-egg-trigger:hover {
+            border-color: rgba(167, 139, 250, 0.3);
+            color: rgba(167, 139, 250, 0.5);
+        }
+
+        .projects-menu {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(167, 139, 250, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(167, 139, 250, 0.1);
+            display: none;
+        }
+
+        .projects-menu.show {
+            display: block;
+            animation: slideInRight 0.3s ease-out;
+        }
+
+        .projects-title {
+            color: #a78bfa;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .project-link {
+            display: block;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            color: white;
+            text-decoration: none;
+            margin-bottom: 8px;
+            transition: all 0.3s;
+        }
+
+        .project-link:hover {
+            background: rgba(167, 139, 250, 0.1);
+            border-color: rgba(167, 139, 250, 0.3);
+            transform: translateX(5px);
+        }
+
+        .project-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .project-url {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Profile Edit Section */
+        .profile-edit-section {
+            padding: 20px;
+        }
+
+        .avatar-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .avatar-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #a78bfa, #7c3aed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: white;
+            overflow: hidden;
+        }
+
+        .avatar-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .avatar-upload-btn {
+            padding: 8px 16px;
+            background: rgba(167, 139, 250, 0.2);
+            border: 1px solid rgba(167, 139, 250, 0.3);
+            border-radius: 20px;
+            color: #a78bfa;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .avatar-upload-btn:hover {
+            background: rgba(167, 139, 250, 0.3);
+        }
+
+        .profile-input-group {
+            margin-bottom: 20px;
+        }
+
+        .profile-input-group label {
+            display: block;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+        }
+
+        .profile-input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: white;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .profile-input:focus {
+            border-color: #a78bfa;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .profile-textarea {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: white;
+            font-size: 0.95rem;
+            outline: none;
+            resize: vertical;
+            min-height: 80px;
+            transition: all 0.3s;
+        }
+
+        .profile-textarea:focus {
+            border-color: #a78bfa;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .profile-save-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #a78bfa, #7c3aed);
+            border: none;
+            border-radius: 14px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .profile-save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(124, 58, 237, 0.4);
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.open {
+            display: flex;
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            max-width: 500px;
+            max-height: 90vh;
+            background: rgba(20, 15, 40, 0.95);
+            border-radius: 20px;
+            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: auto;
+            animation: modalSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes modalSlideUp {
+            from { opacity: 0; transform: translateY(30px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            color: white;
+            font-size: 1.2rem;
+            word-break: break-all;
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            color: white;
+            line-height: 1.6;
+        }
+
+        .modal-body img {
+            max-width: 100%;
+            max-height: 70vh;
+            border-radius: 10px;
+        }
+
+        .modal-body pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .warning-popup {
+            text-align: center;
+        }
+
+        .warning-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .warning-message {
+            margin-bottom: 24px;
+            color: #fcd34d;
+        }
+
+        .warning-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .warning-btn {
+            padding: 10px 24px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .warning-btn.confirm {
+            background: linear-gradient(135deg, #a78bfa, #7c3aed);
+            color: white;
+        }
+
+        .warning-btn.confirm:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(124, 58, 237, 0.4);
+        }
+
+        .warning-btn.danger {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .warning-btn.danger:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .warning-btn.cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .warning-btn.cancel:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Typing Indicator */
+.typing-indicator {
+    padding: 8px 25px 4px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+    min-height: 28px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.typing-text {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.typing-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.typing-dots span {
+    width: 4px;
+    height: 4px;
+    background: #a78bfa;
+    border-radius: 50%;
+    animation: typingDot 1.4s ease-in-out infinite;
+}
+
+.typing-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typingDot {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.4;
+    }
+    30% {
+        transform: translateY(-4px);
+        opacity: 1;
+    }
+}
+
+.typing-names {
+    color: #c4b5fd;
+    font-weight: 500;
+}
+
+.typing-avatars {
+    display: flex;
+    margin-right: 4px;
+}
+
+.typing-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a78bfa, #7c3aed);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: white;
+    margin-right: -6px;
+    border: 2px solid rgba(15, 10, 30, 0.7);
+    overflow: hidden;
+}
+
+.typing-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.typing-avatar:first-child {
+    margin-left: 0;
+}
+    </style>
+</head>
+<body>
+    <div class="animated-bg"></div>
+    <div class="stars" id="stars"></div>
+    <div class="aurora"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+    <div class="orb orb-5"></div>
+
+    <!-- Context Menu -->
+    <div class="context-menu" id="contextMenu">
+        <div class="context-menu-item" data-action="profile">
+            <span>👤</span>
+            <span id="contextProfileText">View Profile</span>
+        </div>
+        <div class="context-menu-item" data-action="mention">
+            <span>💬</span>
+            <span id="contextMentionText">Mention</span>
+        </div>
+        <div class="context-menu-divider"></div>
+        <div class="context-menu-item danger" data-action="block">
+            <span>🚫</span>
+            <span id="contextBlockText">Block User</span>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <!-- Drag & Drop Overlay -->
+    <div class="drag-overlay" id="dragOverlay">
+        <div class="drag-content">
+            <div class="drag-icon">📁</div>
+            <div class="drag-text">Drop files here to upload</div>
+        </div>
+    </div>
+
+    <!-- Settings Overlay -->
+    <div class="settings-overlay" id="settingsOverlay"></div>
+    
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header">
+            <h2 id="settingsTitle">Settings</h2>
+            <button class="close-settings" id="closeSettings">✕</button>
+        </div>
+
+        <div class="settings-section">
+            <h3 id="appearanceTitle">Appearance</h3>
+            <div class="setting-item">
+                <div class="setting-label" id="animationsLabel">Animations</div>
+                <div class="toggle-switch active" id="animationsToggle"><div class="toggle-slider"></div></div>
+            </div>
+            <div class="setting-item">
+                <div class="setting-label" id="bgEffectsLabel">Background Effects</div>
+                <div class="toggle-switch active" id="bgEffectsToggle"><div class="toggle-slider"></div></div>
+            </div>
+            <div class="setting-item">
+                <div class="setting-label" id="transparencyLabel">Transparency</div>
+            </div>
+            <div class="slider-container">
+                <span style="color:rgba(255,255,255,0.4)">⬜</span>
+                <div class="slider" id="transparencySlider">
+                    <div class="slider-fill" id="transparencyFill" style="width:70%"></div>
+                </div>
+                <span style="color:rgba(255,255,255,0.9)">🔲</span>
+                <span class="slider-value" id="transparencyValue">70%</span>
+            </div>
+            <div style="margin-top:15px">
+                <div class="setting-label" style="margin-bottom:10px" id="themeLabel">Theme</div>
+                <div class="theme-options" id="themeOptions"></div>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h3 id="languageTitle">Language</h3>
+            <div class="language-selector">
+                <button class="lang-btn active" data-lang="en">English</button>
+                <button class="lang-btn" data-lang="ru">Русский</button>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h3 id="chatSettingsTitle">Chat Settings</h3>
+            <div class="setting-item">
+                <div class="setting-label" id="enterSendLabel">Enter to Send</div>
+                <div class="toggle-switch active" id="enterSendToggle"><div class="toggle-slider"></div></div>
+            </div>
+            <div class="setting-item">
+                <div class="setting-label" id="typingLabel">Typing Indicator</div>
+                <div class="toggle-switch active" id="typingToggle"><div class="toggle-slider"></div></div>
+            </div>
+            <div class="setting-item">
+                <div class="setting-label" id="autoCollapseLabel">Collapse Long Messages</div>
+                <div class="toggle-switch active" id="autoCollapseToggle"><div class="toggle-slider"></div></div>
+            </div>
+            <div class="setting-item">
+                <div class="setting-label" id="downloadLabel">Enable Downloads</div>
+                <div class="toggle-switch active" id="downloadToggle"><div class="toggle-slider"></div></div>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h3 id="fileSettingsTitle">File Sharing</h3>
+            <div class="setting-item">
+                <div class="setting-label" id="fileSharingLabel">Enable File Sharing</div>
+                <div class="toggle-switch" id="fileSharingToggle"><div class="toggle-slider"></div></div>
+            </div>
+            <div id="filesListSection" style="display:none;">
+                <div class="setting-label" style="margin:15px 0 10px" id="sharedFilesLabel">Shared Files</div>
+                <div class="file-list" id="fileList"></div>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h3 id="debugTitle">Debug</h3>
+            <button class="danger-btn" id="resetIdBtn">
+                <span id="resetIdText">Reset User ID</span>
+            </button>
+            <div class="setting-description" style="margin-top:8px;color:rgba(255,255,255,0.4);font-size:0.7rem;" id="resetIdWarning">
+                Warning: This will generate a new User ID. You will appear as a new user.
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h3 id="dataTitle">Data</h3>
+            <button class="clear-btn" id="clearChatBtn">
+                <span id="clearChatText">Clear Chat History</span>
+            </button>
+        </div>
+
+        <!-- Easter Egg Trigger -->
+        <button class="easter-egg-trigger" id="easterEggTrigger">
+            ✨ · · · ✨
+        </button>
+        
+        <div class="projects-menu" id="projectsMenu">
+            <div class="projects-title">My Other Projects</div>
+            <a href="https://mmshpython-xi.vercel.app/start.html" target="_blank" class="project-link">
+                <div class="project-name">MMSHPython Mod</div>
+                <div class="project-url">mmshpython-xi.vercel.app</div>
+            </a>
+            <a href="https://photo-to-text-chi.vercel.app/" target="_blank" class="project-link">
+                <div class="project-name">Photo To Text</div>
+                <div class="project-url">photo-to-text-chi.vercel.app</div>
+            </a>
+        </div>
+    </div>
+
+    <!-- File Modal -->
+    <div class="modal" id="fileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">File Preview</div>
+                <button class="modal-close" id="closeModal">✕</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- Warning Modal -->
+    <div class="modal" id="warningModal">
+        <div class="modal-content">
+            <div class="warning-popup">
+                <div class="warning-icon">⚠️</div>
+                <div class="warning-message" id="warningMessage"></div>
+                <div class="warning-buttons">
+                    <button class="warning-btn confirm" id="warningConfirm"></button>
+                    <button class="warning-btn cancel" id="warningCancel"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset ID Warning Modal -->
+    <div class="modal" id="resetIdModal">
+        <div class="modal-content">
+            <div class="warning-popup">
+                <div class="warning-icon">🔄</div>
+                <div class="warning-message" id="resetIdMessage">Are you sure you want to reset your User ID? You will appear as a new user and lose your message history association.</div>
+                <div class="warning-buttons">
+                    <button class="warning-btn danger" id="resetIdConfirm">Reset ID</button>
+                    <button class="warning-btn cancel" id="resetIdCancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div class="modal" id="profileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="profileTitle">Edit Profile</div>
+                <button class="modal-close" id="closeProfileModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="profile-edit-section">
+                    <div class="avatar-upload">
+                        <div class="avatar-preview" id="avatarPreview">
+                            <span id="avatarInitial">G</span>
+                        </div>
+                        <input type="file" id="avatarInput" accept="image/*" style="display:none">
+                        <button class="avatar-upload-btn" id="uploadAvatarBtn">Change Avatar</button>
+                    </div>
+                    <div class="profile-input-group">
+                        <label id="displayNameLabel">Display Name</label>
+                        <input type="text" class="profile-input" id="displayNameInput" placeholder="Enter your name" maxlength="30">
+                    </div>
+                    <div class="profile-input-group">
+                        <label id="bioLabel">Bio</label>
+                        <textarea class="profile-textarea" id="bioInput" placeholder="Tell us about yourself..." maxlength="200"></textarea>
+                    </div>
+                    <div class="profile-input-group">
+                        <label id="profileThemeLabel">Profile Theme</label>
+                        <div class="profile-theme-options" id="profileThemeOptions"></div>
+                    </div>
+                    <div class="profile-input-group">
+                        <label id="userIdLabel">User ID</label>
+                        <input type="text" class="profile-input" id="userIdInput" readonly style="opacity:0.6;">
+                    </div>
+                    <button class="profile-save-btn" id="saveProfileBtn">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Profile Modal -->
+    <div class="modal user-profile-modal" id="userProfileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="userProfileTitle">User Profile</div>
+                <button class="modal-close" id="closeUserProfileModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="user-profile-header" id="userProfileBanner">
+                    <div class="user-profile-avatar" id="userProfileAvatar">
+                        <span id="userProfileInitial">U</span>
+                    </div>
+                </div>
+                <div class="user-profile-info">
+                    <div class="user-profile-name" id="userProfileName">Username</div>
+                    <div class="user-profile-bio" id="userProfileBio">No bio yet.</div>
+                    <div class="user-profile-details">
+                        <div class="user-profile-detail">
+                            <div class="user-profile-detail-icon">🆔</div>
+                            <div class="user-profile-detail-content">
+                                <div class="user-profile-detail-label">User ID</div>
+                                <div class="user-profile-detail-value" id="userProfileId">-</div>
+                            </div>
+                        </div>
+                        <div class="user-profile-detail">
+                            <div class="user-profile-detail-icon">🎨</div>
+                            <div class="user-profile-detail-content">
+                                <div class="user-profile-detail-label">Profile Theme</div>
+                                <div class="user-profile-detail-value" id="userProfileTheme">Purple</div>
+                            </div>
+                        </div>
+                        <div class="user-profile-detail">
+                            <div class="user-profile-detail-icon">🟢</div>
+                            <div class="user-profile-detail-content">
+                                <div class="user-profile-detail-label">Status</div>
+                                <div class="user-profile-detail-value" id="userProfileStatus">Online</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="user-profile-actions">
+                        <button class="user-profile-btn primary" id="userProfileMentionBtn">💬 Mention</button>
+                        <button class="user-profile-btn secondary" id="userProfileMessageBtn">✉️ Message</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Groups Sidebar -->
+        <div class="groups-sidebar" id="groupsSidebar">
+            <div class="groups-header">
+                <h2 id="groupsTitle">Chat Groups</h2>
+                <p id="groupsSubtitle">Select a group to chat</p>
+            </div>
+            <div class="groups-list" id="groupsList"></div>
+            
+            <!-- Online Users Section -->
+            <div class="online-users-section">
+                <div class="online-users-header">
+                    <span class="online-users-title" id="onlineUsersTitle">Online Users</span>
+                    <span class="online-users-count" id="onlineUsersCount">0</span>
+                </div>
+                <div class="online-users-list" id="onlineUsersList"></div>
+            </div>
+            
+            <!-- Profile Section -->
+            <div class="profile-section">
+                <div class="profile-info" id="profileInfo">
+                    <div class="profile-avatar" id="sidebarAvatar">
+                        <span id="sidebarAvatarInitial">G</span>
+                    </div>
+                    <div class="profile-details">
+                        <div class="profile-name" id="sidebarName">Guest</div>
+                        <div class="profile-status">Online</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat -->
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-header">
+                <div class="header-left">
+                    <div class="globe-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="2" y1="12" x2="22" y2="12"/>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                        </svg>
+                    </div>
+                    <div class="header-title">
+                        <h1 id="headerTitle">GlobalChat</h1>
+                        <p id="headerSubtitle">Lumina Network</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="online-indicator">
+                        <span class="pulse-dot"></span>
+                        <span class="online-count" id="onlineCount">0 online</span>
+                    </div>
+                    <button class="settings-btn" id="settingsBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="current-group">
+                <span class="current-group-label" id="currentGroupLabel">Current group:</span>
+                <span class="current-group-name" id="currentGroupName">Eng & Rus</span>
+            </div>
+
+            <div class="messages-area" id="messagesArea">
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        <path d="M8 10h.01M12 10h.01M16 10h.01"/>
+                    </svg>
+                    <p id="emptyStateText">No messages yet. Start the conversation!</p>
+                </div>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator"></div>
+
+            <!-- File Preview Bar -->
+            <div class="file-preview-bar" id="filePreviewBar">
+                <div class="file-preview-header">
+                    <span class="file-preview-title" id="filePreviewTitle">Attached Files</span>
+                    <button class="clear-files-btn" id="clearFilesBtn">Clear All</button>
+                </div>
+                <div class="file-preview-list" id="filePreviewList"></div>
+            </div>
+
+            <div class="input-area">
+                <div class="input-container">
+                    <div class="message-input-wrapper">
+                        <textarea class="message-input" id="messageInput" placeholder="Type a message..." rows="1" maxlength="10000"></textarea>
+                        <span class="char-counter" id="charCounter">0/10000</span>
+                        <div class="mention-suggestions" id="mentionSuggestions"></div>
+                        <div class="input-actions">
+                            <input type="file" id="fileInput" style="display:none" multiple accept="image/*">
+                            <button class="attach-btn" id="attachBtn">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                                </svg>
+                            </button>
+                            <button class="send-button" id="sendButton">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <line x1="22" y1="2" x2="11" y2="13"/>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ============== TYPING STATE ==============
+            let typingUsers = new Map(); // userId -> { name, avatar, timestamp }
+            let typingTimeout = null;
+            let isCurrentlyTyping = false;
+            const TYPING_TIMEOUT = 3000; // 3 seconds
+            
+            // ============== THEMES ==============
+            const themesList = [
+                { id: 'purple', name: 'Purple', gradient: ['#7c3aed', '#3b0764'], scrollbarColor: '#a78bfa' },
+                { id: 'sunset', name: 'Sunset', gradient: ['#f97316', '#b91c1c'], scrollbarColor: '#f97316' },
+                { id: 'ocean', name: 'Ocean', gradient: ['#06b6d4', '#1e3a8a'], scrollbarColor: '#06b6d4' },
+                { id: 'forest', name: 'Forest', gradient: ['#10b981', '#064e3b'], scrollbarColor: '#10b981' },
+                { id: 'rose', name: 'Rose', gradient: ['#ec4899', '#831843'], scrollbarColor: '#ec4899' },
+                { id: 'midnight', name: 'Midnight', gradient: ['#1e1b4b', '#312e81'], scrollbarColor: '#818cf8' },
+                { id: 'cherry', name: 'Cherry', gradient: ['#ef4444', '#7f1d1d'], scrollbarColor: '#ef4444' },
+                { id: 'mint', name: 'Mint', gradient: ['#34d399', '#065f46'], scrollbarColor: '#34d399' },
+                { id: 'null', name: 'Null', gradient: ['#1a1a1a', '#0a0a0a'], scrollbarColor: '#6b7280' },
+                { id: 'void', name: 'Void', gradient: ['#0f0f1a', '#1a0a2e'], scrollbarColor: '#a78bfa' },
+                { id: 'star', name: 'Star', gradient: ['#1a1a2e', '#16213e'], scrollbarColor: '#60a5fa' },
+                { id: 'nebula', name: 'Nebula', gradient: ['#2d1b69', '#5b21b6'], scrollbarColor: '#c084fc' }
+            ];
+            
+            const profileThemesList = [
+                { id: 'purple', name: 'Purple', gradient: ['#7c3aed', '#3b0764'] },
+                { id: 'sunset', name: 'Sunset', gradient: ['#f97316', '#b91c1c'] },
+                { id: 'ocean', name: 'Ocean', gradient: ['#06b6d4', '#1e3a8a'] },
+                { id: 'forest', name: 'Forest', gradient: ['#10b981', '#064e3b'] },
+                { id: 'rose', name: 'Rose', gradient: ['#ec4899', '#831843'] },
+                { id: 'midnight', name: 'Midnight', gradient: ['#1e1b4b', '#312e81'] },
+                { id: 'cherry', name: 'Cherry', gradient: ['#ef4444', '#7f1d1d'] },
+                { id: 'mint', name: 'Mint', gradient: ['#34d399', '#065f46'] }
+            ];
+            
+            // ============== STORAGE KEYS ==============
+            const KEYS = {
+                MESSAGES: 'lumina_messages_v7',
+                LOCAL_MESSAGES: 'lumina_local_v7',
+                SETTINGS: 'lumina_settings_v7',
+                PROFILE: 'lumina_profile_v7'
+            };
+            
+            // ============== GROUPS ==============
+            const groups = [
+                { id: 'all', name: 'Eng & Rus', description: 'Both languages', languages: ['en', 'ru'] },
+                { id: 'en', name: 'English', description: 'English only', languages: ['en'] },
+                { id: 'ru', name: 'Русский', description: 'Russian only', languages: ['ru'] }
+            ];
+            
+            let currentGroup = groups[0];
+            
+            // ============== GLOBAL STATE ==============
+            let messages = [];
+            let localMessages = [];
+            let useLocalOnly = false;
+            let pendingFiles = [];
+            let onlineCount = 0;
+            let onlineUsers = new Map();
+            let mentionSuggestions = [];
+            let selectedMentionIndex = 0;
+            let mentionStartPos = -1;
+            let contextMenuTarget = null;
+            
+            // ============== USER PROFILE ==============
+            let userProfile = {
+                id: Math.random().toString(36).substring(2, 11) + Date.now().toString(36),
+                name: 'Guest',
+                avatar: null,
+                avatarColor: '#7c3aed',
+                bio: 'Hey there! I\'m using GlobalChat.',
+                profileTheme: 'purple'
+            };
+            
+            // ============== SETTINGS ==============
+            let settings = {
+                animations: true,
+                bgEffects: true,
+                transparency: 70,
+                enterSend: true,
+                typingIndicator: true,
+                autoCollapse: true,
+                fileSharing: false,
+                downloadEnabled: true,
+                theme: 'purple',
+                language: 'en'
+            };
+            
+            // ============== TRANSLATIONS ==============
+            const translations = {
+                en: {
+                    settingsTitle: 'Settings',
+                    typing: 'is typing',
+                    areTyping: 'are typing',
+                    peopleTyping: 'people are typing',
+                    appearanceTitle: 'Appearance',
+                    animationsLabel: 'Animations',
+                    bgEffectsLabel: 'Background Effects',
+                    transparencyLabel: 'Transparency',
+                    themeLabel: 'Theme',
+                    languageTitle: 'Language',
+                    chatSettingsTitle: 'Chat Settings',
+                    enterSendLabel: 'Enter to Send',
+                    typingLabel: 'Typing Indicator',
+                    autoCollapseLabel: 'Collapse Long Messages',
+                    downloadLabel: 'Enable Downloads',
+                    fileSettingsTitle: 'File Sharing',
+                    fileSharingLabel: 'Enable File Sharing',
+                    warningTitle: 'Security Warning',
+                    warningMessage: '⚠️ Warning: Enabling file sharing may expose you to malware. Only open files from trusted sources. Do you want to continue?',
+                    confirmBtn: 'Enable',
+                    cancelBtn: 'Cancel',
+                    sharedFilesLabel: 'Shared Files',
+                    debugTitle: 'Debug',
+                    resetIdText: 'Reset User ID',
+                    resetIdWarning: 'Warning: This will generate a new User ID. You will appear as a new user.',
+                    dataTitle: 'Data',
+                    clearChatText: 'Clear Chat History',
+                    headerTitle: 'GlobalChat',
+                    headerSubtitle: 'Lumina Network',
+                    emptyStateText: 'No messages yet. Start the conversation!',
+                    typeMessage: 'Type a message...',
+                    online: 'online',
+                    showMore: 'Show more',
+                    showLess: 'Show less',
+                    view: 'View',
+                    download: 'Download',
+                    noFiles: 'No files shared yet',
+                    groupsTitle: 'Chat Groups',
+                    groupsSubtitle: 'Select a group to chat',
+                    currentGroupLabel: 'Current group:',
+                    profileTitle: 'Edit Profile',
+                    displayNameLabel: 'Display Name',
+                    bioLabel: 'Bio',
+                    profileThemeLabel: 'Profile Theme',
+                    userIdLabel: 'User ID',
+                    attachedFiles: 'Attached Files',
+                    clearAll: 'Clear All',
+                    onlineUsersTitle: 'Online Users',
+                    mentionedYou: 'mentioned you',
+                    pingNotification: 'mentioned you in',
+                    contextProfile: 'View Profile',
+                    contextMention: 'Mention',
+                    contextBlock: 'Block User',
+                    noBio: 'No bio yet.'
+                },
+                ru: {
+                    settingsTitle: 'Настройки',
+                    typing: 'печатает',
+                    areTyping: 'печатают',
+                    peopleTyping: 'человек печатают',
+                    appearanceTitle: 'Внешний вид',
+                    animationsLabel: 'Анимации',
+                    bgEffectsLabel: 'Фоновые эффекты',
+                    transparencyLabel: 'Прозрачность',
+                    themeLabel: 'Тема',
+                    languageTitle: 'Язык',
+                    chatSettingsTitle: 'Настройки чата',
+                    enterSendLabel: 'Отправка по Enter',
+                    typingLabel: 'Индикатор печати',
+                    autoCollapseLabel: 'Сворачивать длинные',
+                    downloadLabel: 'Разрешить скачивание',
+                    fileSettingsTitle: 'Обмен файлами',
+                    fileSharingLabel: 'Включить обмен файлами',
+                    warningTitle: 'Предупреждение',
+                    warningMessage: '⚠️ Предупреждение: Включение обмена файлами может подвергнуть вас риску заражения вредоносным ПО. Открывайте файлы только из надежных источников. Продолжить?',
+                    confirmBtn: 'Включить',
+                    cancelBtn: 'Отмена',
+                    sharedFilesLabel: 'Общие файлы',
+                    debugTitle: 'Отладка',
+                    resetIdText: 'Сбросить ID',
+                    resetIdWarning: 'Внимание: Будет сгенерирован новый ID. Вы станете новым пользователем.',
+                    dataTitle: 'Данные',
+                    clearChatText: 'Очистить историю',
+                    headerTitle: 'GlobalChat',
+                    headerSubtitle: 'Lumina Network',
+                    emptyStateText: 'Нет сообщений. Начните общение!',
+                    typeMessage: 'Введите сообщение...',
+                    online: 'онлайн',
+                    showMore: 'Показать больше',
+                    showLess: 'Скрыть',
+                    view: 'Просмотр',
+                    download: 'Скачать',
+                    noFiles: 'Нет общих файлов',
+                    groupsTitle: 'Группы чата',
+                    groupsSubtitle: 'Выберите группу',
+                    currentGroupLabel: 'Текущая группа:',
+                    profileTitle: 'Редактировать профиль',
+                    displayNameLabel: 'Отображаемое имя',
+                    bioLabel: 'О себе',
+                    profileThemeLabel: 'Тема профиля',
+                    userIdLabel: 'ID пользователя',
+                    attachedFiles: 'Прикрепленные файлы',
+                    clearAll: 'Очистить все',
+                    onlineUsersTitle: 'Пользователи онлайн',
+                    mentionedYou: 'упомянул вас',
+                    pingNotification: 'упомянул вас в',
+                    contextProfile: 'Посмотреть профиль',
+                    contextMention: 'Упомянуть',
+                    contextBlock: 'Заблокировать',
+                    noBio: 'Пока нет описания.'
+                }
+            };
+            
+            // ============== DOM ELEMENTS ==============
+            const elements = {
+                messagesArea: document.getElementById('messagesArea'),
+                messageInput: document.getElementById('messageInput'),
+                sendButton: document.getElementById('sendButton'),
+                typingIndicator: document.getElementById('typingIndicator'),
+                onlineCount: document.getElementById('onlineCount'),
+                charCounter: document.getElementById('charCounter'),
+                fileInput: document.getElementById('fileInput'),
+                attachBtn: document.getElementById('attachBtn'),
+                fileModal: document.getElementById('fileModal'),
+                modalTitle: document.getElementById('modalTitle'),
+                modalBody: document.getElementById('modalBody'),
+                closeModal: document.getElementById('closeModal'),
+                warningModal: document.getElementById('warningModal'),
+                warningMessage: document.getElementById('warningMessage'),
+                warningConfirm: document.getElementById('warningConfirm'),
+                warningCancel: document.getElementById('warningCancel'),
+                resetIdModal: document.getElementById('resetIdModal'),
+                resetIdConfirm: document.getElementById('resetIdConfirm'),
+                resetIdCancel: document.getElementById('resetIdCancel'),
+                profileModal: document.getElementById('profileModal'),
+                closeProfileModal: document.getElementById('closeProfileModal'),
+                avatarPreview: document.getElementById('avatarPreview'),
+                avatarInput: document.getElementById('avatarInput'),
+                uploadAvatarBtn: document.getElementById('uploadAvatarBtn'),
+                displayNameInput: document.getElementById('displayNameInput'),
+                bioInput: document.getElementById('bioInput'),
+                userIdInput: document.getElementById('userIdInput'),
+                saveProfileBtn: document.getElementById('saveProfileBtn'),
+                profileThemeOptions: document.getElementById('profileThemeOptions'),
+                profileInfo: document.getElementById('profileInfo'),
+                sidebarAvatar: document.getElementById('sidebarAvatar'),
+                sidebarName: document.getElementById('sidebarName'),
+                settingsBtn: document.getElementById('settingsBtn'),
+                settingsPanel: document.getElementById('settingsPanel'),
+                settingsOverlay: document.getElementById('settingsOverlay'),
+                closeSettings: document.getElementById('closeSettings'),
+                animationsToggle: document.getElementById('animationsToggle'),
+                bgEffectsToggle: document.getElementById('bgEffectsToggle'),
+                transparencySlider: document.getElementById('transparencySlider'),
+                transparencyFill: document.getElementById('transparencyFill'),
+                transparencyValue: document.getElementById('transparencyValue'),
+                enterSendToggle: document.getElementById('enterSendToggle'),
+                typingToggle: document.getElementById('typingToggle'),
+                autoCollapseToggle: document.getElementById('autoCollapseToggle'),
+                fileSharingToggle: document.getElementById('fileSharingToggle'),
+                downloadToggle: document.getElementById('downloadToggle'),
+                resetIdBtn: document.getElementById('resetIdBtn'),
+                clearChatBtn: document.getElementById('clearChatBtn'),
+                filesListSection: document.getElementById('filesListSection'),
+                fileList: document.getElementById('fileList'),
+                orbs: document.querySelectorAll('.orb'),
+                animatedBg: document.querySelector('.animated-bg'),
+                stars: document.getElementById('stars'),
+                aurora: document.querySelector('.aurora'),
+                groupsList: document.getElementById('groupsList'),
+                currentGroupName: document.getElementById('currentGroupName'),
+                dragOverlay: document.getElementById('dragOverlay'),
+                filePreviewBar: document.getElementById('filePreviewBar'),
+                filePreviewList: document.getElementById('filePreviewList'),
+                filePreviewTitle: document.getElementById('filePreviewTitle'),
+                clearFilesBtn: document.getElementById('clearFilesBtn'),
+                themeOptions: document.getElementById('themeOptions'),
+                easterEggTrigger: document.getElementById('easterEggTrigger'),
+                projectsMenu: document.getElementById('projectsMenu'),
+                groupsSidebar: document.getElementById('groupsSidebar'),
+                chatContainer: document.getElementById('chatContainer'),
+                onlineUsersList: document.getElementById('onlineUsersList'),
+                onlineUsersCount: document.getElementById('onlineUsersCount'),
+                mentionSuggestions: document.getElementById('mentionSuggestions'),
+                notificationContainer: document.getElementById('notificationContainer'),
+                contextMenu: document.getElementById('contextMenu'),
+                userProfileModal: document.getElementById('userProfileModal'),
+                closeUserProfileModal: document.getElementById('closeUserProfileModal'),
+                userProfileBanner: document.getElementById('userProfileBanner'),
+                userProfileAvatar: document.getElementById('userProfileAvatar'),
+                userProfileName: document.getElementById('userProfileName'),
+                userProfileBio: document.getElementById('userProfileBio'),
+                userProfileId: document.getElementById('userProfileId'),
+                userProfileTheme: document.getElementById('userProfileTheme'),
+                userProfileStatus: document.getElementById('userProfileStatus'),
+                userProfileMentionBtn: document.getElementById('userProfileMentionBtn'),
+                userProfileMessageBtn: document.getElementById('userProfileMessageBtn')
+            };
+            
+            // ============== RENDER PROFILE THEMES ==============
+            function renderProfileThemes() {
+                elements.profileThemeOptions.innerHTML = profileThemesList.map(theme => `
+                    <div class="profile-theme-option ${theme.id} ${userProfile.profileTheme === theme.id ? 'active' : ''}" data-theme="${theme.id}"></div>
+                `).join('');
+                
+                document.querySelectorAll('.profile-theme-option').forEach(option => {
+                    option.addEventListener('click', function() {
+                        userProfile.profileTheme = this.dataset.theme;
+                        document.querySelectorAll('.profile-theme-option').forEach(o => o.classList.remove('active'));
+                        this.classList.add('active');
+                    });
+                });
+            }
+            
+            // ============== SHOW USER PROFILE ==============
+            function showUserProfile(user) {
+                const theme = profileThemesList.find(t => t.id === (user.profileTheme || 'purple')) || profileThemesList[0];
+                const [color1, color2] = theme.gradient;
+                
+                elements.userProfileBanner.style.background = `linear-gradient(135deg, ${color1}, ${color2})`;
+                elements.userProfileName.textContent = user.name;
+                elements.userProfileBio.textContent = user.bio || translations[settings.language].noBio;
+                elements.userProfileId.textContent = user.id;
+                elements.userProfileTheme.textContent = theme.name;
+                elements.userProfileStatus.textContent = onlineUsers.has(user.id) ? 'Online' : 'Offline';
+                
+                if (user.avatar) {
+                    elements.userProfileAvatar.innerHTML = `<img src="${user.avatar}" alt="${user.name}">`;
+                } else {
+                    elements.userProfileAvatar.innerHTML = `<span>${user.name.charAt(0).toUpperCase()}</span>`;
+                }
+                
+                // Set up buttons
+                elements.userProfileMentionBtn.onclick = () => {
+                    insertMention(user.name);
+                    elements.userProfileModal.classList.remove('open');
+                };
+                
+                elements.userProfileMessageBtn.onclick = () => {
+                    elements.messageInput.focus();
+                    elements.userProfileModal.classList.remove('open');
+                };
+                
+                elements.userProfileModal.classList.add('open');
+            }
+            
+            // ============== CONTEXT MENU ==============
+            function showContextMenu(x, y, user) {
+                contextMenuTarget = user;
+                elements.contextMenu.style.left = x + 'px';
+                elements.contextMenu.style.top = y + 'px';
+                elements.contextMenu.classList.add('show');
+            }
+            
+            function hideContextMenu() {
+                elements.contextMenu.classList.remove('show');
+                contextMenuTarget = null;
+            }
+
+            // ============== TYPING FUNCTIONS ==============
+function startTyping() {
+    if (!settings.typingIndicator) return;
+    
+    const typingKey = `typing_${userProfile.id}_${currentGroup.id}`;
+    const typingData = {
+        userId: userProfile.id,
+        name: userProfile.name,
+        avatar: userProfile.avatar,
+        groupId: currentGroup.id,
+        timestamp: Date.now()
+    };
+    
+    localStorage.setItem(typingKey, JSON.stringify(typingData));
+    
+    if (typingTimeout) clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => {
+        stopTyping();
+    }, TYPING_TIMEOUT);
+}
+
+function stopTyping() {
+    const typingKey = `typing_${userProfile.id}_${currentGroup.id}`;
+    localStorage.removeItem(typingKey);
+    if (typingTimeout) {
+        clearTimeout(typingTimeout);
+        typingTimeout = null;
+    }
+}
+
+function throttle(func, limit) {
+    let inThrottle;
+    return function() {
+        const args = arguments;
+        const context = this;
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    };
+}
+
+function updateTypingIndicator() {
+    if (!settings.typingIndicator) {
+        elements.typingIndicator.innerHTML = '';
+        elements.typingIndicator.style.display = 'none';
+        return;
+    }
+    
+    const now = Date.now();
+    typingUsers.clear();
+    
+    // Collect all typing users for current group
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('typing_')) {
+            try {
+                const data = JSON.parse(localStorage.getItem(key));
+                // Only show typing for current group and not self
+                if (data.groupId === currentGroup.id && 
+                    data.userId !== userProfile.id && 
+                    now - data.timestamp < TYPING_TIMEOUT) {
+                    typingUsers.set(data.userId, data);
+                } else if (now - data.timestamp >= TYPING_TIMEOUT) {
+                    // Clean up old typing data
+                    localStorage.removeItem(key);
+                }
+            } catch (e) {
+                localStorage.removeItem(key);
+            }
+        }
+    }
+    
+    const typingArray = Array.from(typingUsers.values());
+    
+    if (typingArray.length === 0) {
+        elements.typingIndicator.innerHTML = '';
+        elements.typingIndicator.style.display = 'none';
+        return;
+    }
+    
+    elements.typingIndicator.style.display = 'flex';
+    
+    // Build typing indicator HTML
+    let html = '';
+    
+    // Show avatars (max 3)
+    if (typingArray.length <= 3) {
+        html += '<div class="typing-avatars">';
+        typingArray.slice(0, 3).forEach(user => {
+            html += `
+                <div class="typing-avatar">
+                    ${user.avatar ? 
+                        `<img src="${user.avatar}" alt="${escapeHtml(user.name)}">` : 
+                        user.name.charAt(0).toUpperCase()
+                    }
+                </div>
+            `;
+        });
+        html += '</div>';
+    }
+    
+    // Build text
+    html += '<div class="typing-text">';
+    
+    if (typingArray.length === 1) {
+        html += `<span class="typing-names">${escapeHtml(typingArray[0].name)}</span> is typing`;
+    } else if (typingArray.length === 2) {
+        html += `<span class="typing-names">${escapeHtml(typingArray[0].name)}</span> and <span class="typing-names">${escapeHtml(typingArray[1].name)}</span> are typing`;
+    } else if (typingArray.length === 3) {
+        html += `<span class="typing-names">${escapeHtml(typingArray[0].name)}</span>, <span class="typing-names">${escapeHtml(typingArray[1].name)}</span> and <span class="typing-names">${escapeHtml(typingArray[2].name)}</span> are typing`;
+    } else {
+        html += `<span class="typing-names">${typingArray.length}</span> people are typing`;
+    }
+    
+    html += '<span class="typing-dots"><span></span><span></span><span></span></span>';
+    html += '</div>';
+    
+    elements.typingIndicator.innerHTML = html;
+}
+
+// Throttle function to limit typing updates
+function throttle(func, limit) {
+    let inThrottle;
+    return function() {
+        const args = arguments;
+        const context = this;
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    };
+}
+
+const throttledTypingUpdate = throttle(startTyping, 2000);
+            
+            // ============== NOTIFICATION FUNCTIONS ==============
+            function showNotification(title, message, onClick) {
+                const toast = document.createElement('div');
+                toast.className = 'notification-toast';
+                toast.innerHTML = `
+                    <div class="notification-icon">🔔</div>
+                    <div class="notification-content">
+                        <div class="notification-title">${escapeHtml(title)}</div>
+                        <div class="notification-message">${escapeHtml(message)}</div>
+                    </div>
+                    <div class="notification-close">✕</div>
+                `;
+                
+                if (onClick) {
+                    toast.addEventListener('click', (e) => {
+                        if (!e.target.classList.contains('notification-close')) {
+                            onClick();
+                            toast.remove();
+                        }
+                    });
+                }
+                
+                toast.querySelector('.notification-close').addEventListener('click', () => {
+                    toast.classList.add('fade-out');
+                    setTimeout(() => toast.remove(), 300);
+                });
+                
+                elements.notificationContainer.appendChild(toast);
+                
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.classList.add('fade-out');
+                        setTimeout(() => toast.remove(), 300);
+                    }
+                }, 5000);
+            }
+            
+            // ============== UPDATE SCROLLBAR COLORS ==============
+            function updateScrollbarColors(themeId) {
+                const theme = themesList.find(t => t.id === themeId) || themesList[0];
+                const color = theme.scrollbarColor;
+                
+                const style = document.createElement('style');
+                style.id = 'scrollbar-styles';
+                style.textContent = `
+                    .messages-area::-webkit-scrollbar-thumb { background: ${color}80 !important; }
+                    .settings-panel::-webkit-scrollbar-thumb { background: ${color}80 !important; }
+                    .groups-list::-webkit-scrollbar-thumb { background: ${color}80 !important; }
+                    .file-preview-list::-webkit-scrollbar-thumb { background: ${color}80 !important; }
+                    .theme-options::-webkit-scrollbar-thumb { background: ${color}80 !important; }
+                    .file-list::-webkit-scrollbar-thumb { background: ${color}80 !important; }
+                    .online-users-list::-webkit-scrollbar-thumb { background: ${color}80 !important; }
+                `;
+                
+                const oldStyle = document.getElementById('scrollbar-styles');
+                if (oldStyle) oldStyle.remove();
+                document.head.appendChild(style);
+            }
+            
+            // ============== RENDER THEMES ==============
+            function renderThemes() {
+                elements.themeOptions.innerHTML = themesList.map(theme => `
+                    <div class="theme-option ${theme.id} ${settings.theme === theme.id ? 'active' : ''}" data-theme="${theme.id}">
+                        <span class="theme-check">✓</span>
+                    </div>
+                `).join('');
+                
+                document.querySelectorAll('.theme-option').forEach(option => {
+                    option.addEventListener('click', function() {
+                        settings.theme = this.dataset.theme;
+                        applyTheme(settings.theme);
+                        updateScrollbarColors(settings.theme);
+                        saveSettings();
+                        document.querySelectorAll('.theme-option').forEach(o => o.classList.remove('active'));
+                        this.classList.add('active');
+                    });
+                });
+            }
+            
+            // ============== CREATE STARS ==============
+            function createStars() {
+                for (let i = 0; i < 100; i++) {
+                    const star = document.createElement('div');
+                    star.className = 'star';
+                    star.style.left = Math.random() * 100 + '%';
+                    star.style.top = Math.random() * 100 + '%';
+                    star.style.animationDelay = Math.random() * 3 + 's';
+                    star.style.width = Math.random() * 3 + 1 + 'px';
+                    star.style.height = star.style.width;
+                    elements.stars.appendChild(star);
+                }
+            }
+            createStars();
+            
+            // ============== TRANSPARENCY FUNCTIONS ==============
+            function updateTransparency(value) {
+                settings.transparency = value;
+                const opacity = value / 100;
+                elements.groupsSidebar.style.setProperty('--bg-opacity', opacity);
+                elements.chatContainer.style.setProperty('--bg-opacity', opacity);
+                elements.transparencyFill.style.width = value + '%';
+                elements.transparencyValue.textContent = value + '%';
+            }
+            
+            // ============== ONLINE USERS FUNCTIONS ==============
+            function updateOnlineUsersList() {
+    const users = Array.from(onlineUsers.values()).filter(u => u.id !== userProfile.id);
+    elements.onlineUsersCount.textContent = users.length;
+    
+    if (users.length === 0) {
+        elements.onlineUsersList.innerHTML = `<div style="color:rgba(255,255,255,0.3);text-align:center;padding:10px;font-size:0.8rem;">No other users online</div>`;
+        return;
+    }
+    
+    elements.onlineUsersList.innerHTML = users.map(user => `
+        <div class="online-user-item" data-user-id="${user.id}" data-user-name="${escapeHtml(user.name)}">
+            <div class="online-user-avatar">${user.avatar ? `<img src="${user.avatar}" alt="${escapeHtml(user.name)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : user.name.charAt(0).toUpperCase()}</div>
+            <div class="online-user-name">${escapeHtml(user.name)}</div>
+            <div class="online-user-status"></div>
+        </div>
+    `).join('');
+                
+                document.querySelectorAll('.online-user-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const userName = item.dataset.userName;
+                        insertMention(userName);
+                    });
+                    
+                    item.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        const userId = item.dataset.userId;
+                        const user = onlineUsers.get(userId);
+                        if (user) {
+                            showContextMenu(e.clientX, e.clientY, user);
+                        }
+                    });
+                });
+            }
+            
+            // ============== MENTION FUNCTIONS ==============
+            function insertMention(userName) {
+                const input = elements.messageInput;
+                const cursorPos = input.selectionStart;
+                const textBefore = input.value.substring(0, mentionStartPos >= 0 ? mentionStartPos : cursorPos);
+                const textAfter = input.value.substring(cursorPos);
+                
+                if (mentionStartPos >= 0) {
+                    input.value = textBefore + '@' + userName + ' ' + textAfter;
+                } else {
+                    input.value = textBefore + '@' + userName + ' ' + textAfter;
+                }
+                
+                elements.mentionSuggestions.classList.remove('show');
+                mentionStartPos = -1;
+                input.focus();
+            }
+            
+            function showMentionSuggestions(filter = '') {
+    const users = Array.from(onlineUsers.values()).filter(u => 
+        u.id !== userProfile.id && 
+        u.name.toLowerCase().includes(filter.toLowerCase())
+    );
+    
+    if (users.length === 0) {
+        elements.mentionSuggestions.classList.remove('show');
+        return;
+    }
+    
+    mentionSuggestions = users;
+    selectedMentionIndex = 0;
+    
+    elements.mentionSuggestions.innerHTML = users.map((user, index) => `
+        <div class="mention-suggestion-item ${index === 0 ? 'active' : ''}" data-index="${index}" data-name="${escapeHtml(user.name)}">
+            <div class="mention-suggestion-avatar">
+                ${user.avatar ? 
+                    `<img src="${user.avatar}" alt="${escapeHtml(user.name)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : 
+                    user.name.charAt(0).toUpperCase()
+                }
+            </div>
+            <div class="mention-suggestion-name">${escapeHtml(user.name)}</div>
+        </div>
+    `).join('');
+                
+                elements.mentionSuggestions.classList.add('show');
+                
+                document.querySelectorAll('.mention-suggestion-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        insertMention(item.dataset.name);
+                    });
+                });
+            }
+            
+            function checkForMention(content) {
+                const mentionedUsers = [];
+                const mentionRegex = /@(\w+)/g;
+                let match;
+                
+                while ((match = mentionRegex.exec(content)) !== null) {
+                    const mentionedName = match[1];
+                    const mentionedUser = Array.from(onlineUsers.values()).find(u => 
+                        u.name.toLowerCase() === mentionedName.toLowerCase()
+                    );
+                    if (mentionedUser && mentionedUser.id !== userProfile.id) {
+                        mentionedUsers.push(mentionedUser);
+                    }
+                }
+                
+                return mentionedUsers;
+            }
+            
+            function highlightMentions(content) {
+                if (!content) return escapeHtml(content);
+                return escapeHtml(content).replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+            }
+            
+            // ============== FILE PREVIEW FUNCTIONS ==============
+            function updateFilePreview() {
+                if (!pendingFiles.length) {
+                    elements.filePreviewBar.classList.remove('show');
+                    return;
+                }
+                
+                elements.filePreviewBar.classList.add('show');
+                elements.filePreviewTitle.textContent = `${translations[settings.language].attachedFiles} (${pendingFiles.length})`;
+                
+                elements.filePreviewList.innerHTML = pendingFiles.map((file, index) => {
+                    const isImage = file.type && file.type.startsWith('image/');
+                    const fileSize = formatFileSize(file.size);
+                    
+                    return `
+                        <div class="file-preview-item" data-file-index="${index}">
+                            <div class="file-preview-thumb">
+                                ${isImage ? 
+                                    `<img src="${URL.createObjectURL(file)}" alt="${escapeHtml(file.name)}">` : 
+                                    `<span class="file-icon-small">📄</span>`
+                                }
+                            </div>
+                            <div class="file-preview-name">${escapeHtml(file.name)}</div>
+                            <div class="file-preview-size">${fileSize}</div>
+                            <button class="file-remove-btn" data-remove-index="${index}">✕</button>
+                        </div>
+                    `;
+                }).join('');
+                
+                document.querySelectorAll('[data-remove-index]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const index = parseInt(btn.dataset.removeIndex);
+                        removeFile(index);
+                    });
+                });
+                
+                document.querySelectorAll('.file-preview-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const index = parseInt(item.dataset.fileIndex);
+                        const file = pendingFiles[index];
+                        if (file && file.type.startsWith('image/')) {
+                            elements.modalTitle.textContent = file.name;
+                            elements.modalBody.innerHTML = `<img src="${URL.createObjectURL(file)}" alt="${escapeHtml(file.name)}">`;
+                            elements.fileModal.classList.add('open');
+                        }
+                    });
+                });
+            }
+            
+            function removeFile(index) {
+                pendingFiles.splice(index, 1);
+                updateFilePreview();
+                if (!pendingFiles.length) {
+                    elements.messageInput.placeholder = translations[settings.language].typeMessage;
+                }
+            }
+            
+            function clearAllFiles() {
+                pendingFiles = [];
+                updateFilePreview();
+                elements.messageInput.placeholder = translations[settings.language].typeMessage;
+                elements.fileInput.value = '';
+            }
+            
+            function addFiles(files) {
+                pendingFiles.push(...files);
+                updateFilePreview();
+                elements.messageInput.placeholder = `${pendingFiles.length} file(s) ready to send`;
+            }
+            
+            // ============== PROFILE FUNCTIONS ==============
+            function loadProfile() {
+                const saved = localStorage.getItem(KEYS.PROFILE);
+                if (saved) {
+                    try {
+                        userProfile = { ...userProfile, ...JSON.parse(saved) };
+                    } catch (e) {}
+                }
+                updateProfileUI();
+                renderProfileThemes();
+            }
+            
+            function saveProfile() {
+                localStorage.setItem(KEYS.PROFILE, JSON.stringify(userProfile));
+                updateProfileUI();
+            }
+            
+            function updateProfileUI() {
+                elements.sidebarName.textContent = userProfile.name;
+                
+                if (userProfile.avatar) {
+                    elements.sidebarAvatar.innerHTML = `<img src="${userProfile.avatar}" alt="${userProfile.name}">`;
+                } else {
+                    const initial = userProfile.name.charAt(0).toUpperCase();
+                    elements.sidebarAvatar.innerHTML = `<span>${initial}</span>`;
+                }
+                
+                elements.displayNameInput.value = userProfile.name;
+                elements.bioInput.value = userProfile.bio || '';
+                elements.userIdInput.value = userProfile.id;
+                
+                if (userProfile.avatar) {
+                    elements.avatarPreview.innerHTML = `<img src="${userProfile.avatar}" alt="${userProfile.name}">`;
+                } else {
+                    const initial = userProfile.name.charAt(0).toUpperCase();
+                    elements.avatarPreview.innerHTML = `<span style="font-size:2.5rem;font-weight:700;">${initial}</span>`;
+                }
+            }
+            
+            function resetUserId() {
+                userProfile.id = Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+                saveProfile();
+                updateProfileUI();
+                elements.resetIdModal.classList.remove('open');
+            }
+            
+            // ============== UTILITY FUNCTIONS ==============
+            function formatTime(ts) {
+                return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+            
+            function formatDate(ts) {
+                const d = new Date(ts);
+                const today = new Date();
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                
+                if (d.toDateString() === today.toDateString()) {
+                    return settings.language === 'en' ? 'Today' : 'Сегодня';
+                }
+                if (d.toDateString() === yesterday.toDateString()) {
+                    return settings.language === 'en' ? 'Yesterday' : 'Вчера';
+                }
+                return d.toLocaleDateString(settings.language === 'en' ? 'en-US' : 'ru-RU', { month: 'long', day: 'numeric' });
+            }
+            
+            function formatFileSize(bytes) {
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+            }
+            
+            function escapeHtml(text) {
+                if (!text) return '';
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            // ============== GROUP FUNCTIONS ==============
+            function renderGroups() {
+                elements.groupsList.innerHTML = groups.map(group => `
+                    <div class="group-item ${group.id === currentGroup.id ? 'active' : ''}" data-group-id="${group.id}">
+                        <div class="group-name">${group.name}</div>
+                        <div class="group-info">
+                            <div class="group-lang">
+                                <span></span>
+                                ${group.languages.join(' & ').toUpperCase()}
+                            </div>
+                            <div class="group-count">${getGroupMessageCount(group.id)} msgs</div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.querySelectorAll('.group-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const groupId = item.dataset.groupId;
+                        currentGroup = groups.find(g => g.id === groupId);
+                        renderGroups();
+                        elements.currentGroupName.textContent = currentGroup.name;
+                        renderMessages();
+                    });
+                });
+            }
+            
+            function getGroupMessageCount(groupId) {
+                const display = useLocalOnly ? localMessages : messages;
+                return display.filter(msg => {
+                    if (msg.type === 'system') return false;
+                    if (groupId === 'all') return true;
+                    if (groupId === 'en') return msg.language === 'en';
+                    if (groupId === 'ru') return msg.language === 'ru';
+                    return false;
+                }).length;
+            }
+            
+            function filterMessagesByGroup(msgs) {
+                return msgs.filter(msg => {
+                    if (msg.type === 'system') return true;
+                    if (currentGroup.id === 'all') return true;
+                    return msg.language === currentGroup.id;
+                });
+            }
+            
+            // ============== UI UPDATE FUNCTIONS ==============
+            function updateLanguage() {
+                const t = translations[settings.language];
+                document.querySelectorAll('[id]').forEach(el => {
+                    if (t[el.id]) el.textContent = t[el.id];
+                });
+                elements.messageInput.placeholder = pendingFiles.length ? 
+                    `${pendingFiles.length} file(s) ready to send` : 
+                    t.typeMessage;
+                updateOnlineDisplay();
+                renderGroups();
+            }
+            
+            function updateOnlineDisplay() {
+                elements.onlineCount.textContent = `${onlineCount} ${translations[settings.language].online}`;
+            }
+            
+            function applyTheme(theme) {
+                const themeData = themesList.find(t => t.id === theme) || themesList[0];
+                const [color1, color2] = themeData.gradient;
+                
+                const bgColors = {
+                    purple: ['#0a0a1a', '#1a1040', '#0d0d2b', '#1a0d35'],
+                    sunset: ['#1a0a0a', '#401010', '#2b0d0d', '#351515'],
+                    ocean: ['#0a1a2a', '#103040', '#0d1b2b', '#0d2535'],
+                    forest: ['#0a1a12', '#103020', '#0d1b15', '#0d2518'],
+                    rose: ['#1a0a12', '#401020', '#2b0d18', '#351525'],
+                    midnight: ['#0a0a1a', '#1a1040', '#0d0d2b', '#1a0d35'],
+                    cherry: ['#1a0a0a', '#401010', '#2b0d0d', '#351515'],
+                    mint: ['#0a1a15', '#103025', '#0d1b18', '#0d2520'],
+                    null: ['#0a0a0a', '#1a1a1a', '#0d0d0d', '#151515'],
+                    void: ['#0a0a1a', '#1a0a2e', '#0d0d2b', '#1a0d35'],
+                    star: ['#0a0a1a', '#16213e', '#0d0d2b', '#1a1a2e'],
+                    nebula: ['#1a0a2e', '#2d1b69', '#0d0d2b', '#1a0d35']
+                };
+                
+                const colors = bgColors[theme] || bgColors.purple;
+                elements.animatedBg.style.background = `linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 25%, ${colors[2]} 50%, ${colors[3]} 75%, ${colors[0]} 100%)`;
+                document.querySelector('.send-button').style.background = `linear-gradient(135deg, ${color1}, ${color2})`;
+                document.querySelector('.globe-icon').style.background = `linear-gradient(135deg, ${color1}, ${color2})`;
+            }
+            
+            function applySettings() {
+                elements.animationsToggle.classList.toggle('active', settings.animations);
+                elements.bgEffectsToggle.classList.toggle('active', settings.bgEffects);
+                elements.enterSendToggle.classList.toggle('active', settings.enterSend);
+                elements.typingToggle.classList.toggle('active', settings.typingIndicator);
+                elements.autoCollapseToggle.classList.toggle('active', settings.autoCollapse);
+                elements.fileSharingToggle.classList.toggle('active', settings.fileSharing);
+                elements.downloadToggle.classList.toggle('active', settings.downloadEnabled);
+                
+                updateTransparency(settings.transparency);
+                
+                elements.attachBtn.style.display = settings.fileSharing ? 'flex' : 'none';
+                elements.filesListSection.style.display = settings.fileSharing ? 'block' : 'none';
+                
+                elements.orbs.forEach(o => o.style.display = settings.bgEffects ? 'block' : 'none');
+                elements.stars.style.display = settings.bgEffects ? 'block' : 'none';
+                elements.aurora.style.display = settings.bgEffects ? 'block' : 'none';
+                
+                if (settings.animations) {
+                    elements.animatedBg.style.animation = 'gradientShift 15s ease infinite';
+                } else {
+                    elements.animatedBg.style.animation = 'none';
+                }
+                
+                applyTheme(settings.theme);
+                updateScrollbarColors(settings.theme);
+                
+                document.querySelectorAll('.lang-btn').forEach(b => {
+                    b.classList.toggle('active', b.dataset.lang === settings.language);
+                });
+                
+                updateLanguage();
+                
+                if (settings.fileSharing) updateFilesList();
+            }
+            
+            // ============== STORAGE FUNCTIONS ==============
+            function loadSettings() {
+                const saved = localStorage.getItem(KEYS.SETTINGS);
+                if (saved) {
+                    try {
+                        settings = { ...settings, ...JSON.parse(saved) };
+                    } catch (e) {}
+                }
+                renderThemes();
+                applySettings();
+            }
+            
+            function saveSettings() {
+                localStorage.setItem(KEYS.SETTINGS, JSON.stringify(settings));
+            }
+            
+            function loadMessages() {
+                try {
+                    messages = JSON.parse(localStorage.getItem(KEYS.MESSAGES) || '[]');
+                    localMessages = JSON.parse(localStorage.getItem(KEYS.LOCAL_MESSAGES) || '[]');
+                } catch (e) {
+                    messages = [];
+                    localMessages = [];
+                }
+            }
+            
+            function saveMessages() {
+    try {
+        localStorage.setItem(KEYS.MESSAGES, JSON.stringify(messages));
+        localStorage.setItem(KEYS.LOCAL_MESSAGES, JSON.stringify(localMessages));
+    } catch (e) {
+        console.warn('Storage quota exceeded - performing cleanup...');
+        
+        // First, clear ALL old/duplicate data aggressively
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            // Remove ALL old version message keys
+            if (key.includes('lumina_messages') || key.includes('lumina_local')) {
+                if (key !== KEYS.MESSAGES && key !== KEYS.LOCAL_MESSAGES) {
+                    keysToRemove.push(key);
+                }
+            }
+            // Remove online data older than 10 minutes
+            if (key.startsWith('online_')) {
+                try {
+                    const data = JSON.parse(localStorage.getItem(key));
+                    if (Date.now() - data.ts > 600000) {
+                        keysToRemove.push(key);
+                    }
+                } catch (e) {
+                    keysToRemove.push(key);
+                }
+            }
+            // Remove any file data keys
+            if (key.includes('file_') || key.includes('_files')) {
+                keysToRemove.push(key);
+            }
+        }
+        keysToRemove.forEach(key => {
+            try {
+                localStorage.removeItem(key);
+            } catch (e) {}
+        });
+        
+        console.log('Cleaned up', keysToRemove.length, 'storage entries');
+        
+        // Now try with progressively smaller message counts
+        // Start at 5000 and only go down to 250 minimum
+        const trimLevels = [5000, 2500, 1000, 500, 250];
+        
+        for (const trimSize of trimLevels) {
+            // Keep only the last trimSize messages
+            const trimmedMessages = messages.slice(-trimSize);
+            const trimmedLocal = localMessages.slice(-trimSize);
+            
+            // Strip ALL file content to save space
+            const strippedMessages = trimmedMessages.map(msg => {
+                const cleanMsg = { ...msg };
+                if (cleanMsg.files) {
+                    cleanMsg.files = cleanMsg.files.map(f => ({ 
+                        id: f.id, 
+                        name: f.name, 
+                        size: f.size, 
+                        type: f.type,
+                        content: null // Remove file content completely
+                    }));
+                }
+                // Remove any large fields
+                delete cleanMsg.rawContent;
+                delete cleanMsg.base64;
+                return cleanMsg;
+            });
+            
+            try {
+                const jsonStr = JSON.stringify(strippedMessages);
+                console.log(`Trying ${trimSize} messages: ${(jsonStr.length / 1024).toFixed(1)}KB`);
+                
+                localStorage.setItem(KEYS.MESSAGES, jsonStr);
+                localStorage.setItem(KEYS.LOCAL_MESSAGES, jsonStr);
+                
+                // Update the actual arrays
+                messages = trimmedMessages;
+                localMessages = trimmedLocal;
+                
+                renderMessages();
+                renderGroups();
+                
+                showNotification('Storage Managed', `Keeping last ${trimSize} messages.`, null);
+                console.log(`Successfully saved ${trimSize} messages`);
+                return;
+            } catch (e2) {
+                console.log(`Failed to save ${trimSize} messages, trying smaller...`);
+                continue;
+            }
+        }
+        
+        // If we get here, even 250 messages won't fit - storage is critically full
+        console.error('Critical storage failure - manual clear needed');
+        
+        // Save just the last 50 messages as a last resort
+        try {
+            messages = messages.slice(-50);
+            localMessages = localMessages.slice(-50);
+            const minimalMessages = messages.map(msg => ({ 
+                type: msg.type, 
+                sender: msg.sender, 
+                content: msg.content, 
+                timestamp: msg.timestamp,
+                userId: msg.userId
+            }));
+            localStorage.setItem(KEYS.MESSAGES, JSON.stringify(minimalMessages));
+            localStorage.setItem(KEYS.LOCAL_MESSAGES, JSON.stringify(minimalMessages));
+            renderMessages();
+            renderGroups();
+            alert('Storage is critically full. Only 50 messages kept. Use Emergency Clear in Settings.');
+        } catch (e3) {
+            // Nothing we can do
+            alert('STORAGE FULL! Please go to Settings > Data and click "Emergency Clear" to fix.');
+        }
+    }
+}           
+            
+            
+            // ============== FILE FUNCTIONS ==============
+            function updateFilesList() {
+                if (!settings.fileSharing) return;
+                
+                const allFiles = [];
+                const source = useLocalOnly ? localMessages : messages;
+                source.forEach(msg => {
+                    if (msg.files) {
+                        allFiles.push(...msg.files.map(f => ({ ...f, sender: msg.sender, timestamp: msg.timestamp })));
+                    }
+                });
+                
+                if (!allFiles.length) {
+                    elements.fileList.innerHTML = `<div style="color:rgba(255,255,255,0.3);text-align:center;padding:20px;">${translations[settings.language].noFiles}</div>`;
+                    return;
+                }
+                
+                elements.fileList.innerHTML = allFiles.slice(-20).reverse().map(f => `
+                    <div class="file-list-item">
+                        <div class="file-list-info">
+                            <div class="file-list-name">${escapeHtml(f.name)}</div>
+                            <div class="file-list-meta">${formatFileSize(f.size)} • ${escapeHtml(f.sender)} • ${formatTime(f.timestamp)}</div>
+                        </div>
+                        <div class="file-list-actions">
+                            <button class="file-list-btn" data-file-id="${f.id}" data-action="view">${translations[settings.language].view}</button>
+                            ${settings.downloadEnabled ? `<button class="file-list-btn" data-file-id="${f.id}" data-action="download">${translations[settings.language].download}</button>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            window.viewFile = function(fileId) {
+                const source = useLocalOnly ? localMessages : messages;
+                for (const msg of source) {
+                    if (msg.files) {
+                        const file = msg.files.find(f => f.id === fileId);
+                        if (file) {
+                            elements.modalTitle.textContent = file.name;
+                            if (file.type && file.type.startsWith('image/')) {
+                                elements.modalBody.innerHTML = `<img src="${file.content}" alt="${escapeHtml(file.name)}">`;
+                            } else if (file.type && (file.type.startsWith('text/') || file.name.match(/\.(txt|json|js|css|html|md|log)$/i))) {
+                                elements.modalBody.innerHTML = `<pre>${escapeHtml(file.content)}</pre>`;
+                            } else {
+                                elements.modalBody.innerHTML = `<div style="color:white;text-align:center;padding:40px;">Preview not available</div>`;
+                            }
+                            elements.fileModal.classList.add('open');
+                            return;
+                        }
+                    }
+                }
+            };
+            
+            window.downloadFile = function(fileId) {
+                if (!settings.downloadEnabled) {
+                    alert(settings.language === 'en' ? 'Downloads are disabled' : 'Скачивание отключено');
+                    return;
+                }
+                const source = useLocalOnly ? localMessages : messages;
+                for (const msg of source) {
+                    if (msg.files) {
+                        const file = msg.files.find(f => f.id === fileId);
+                        if (file) {
+                            const a = document.createElement('a');
+                            a.href = file.content;
+                            a.download = file.name;
+                            a.click();
+                            return;
+                        }
+                    }
+                }
+            };
+            
+            // ============== RENDER FUNCTIONS ==============
+            function renderFileAttachment(file) {
+                const isImage = file.type && file.type.startsWith('image/');
+                const isText = file.type && (file.type.startsWith('text/') || file.name.match(/\.(txt|json|js|css|html|md|log)$/i));
+                
+                return `
+                    <div class="file-attachment">
+                        <div class="file-info">
+                            <div class="file-icon">${isImage ? '🖼️' : '📄'}</div>
+                            <div class="file-details">
+                                <div class="file-name">${escapeHtml(file.name)}</div>
+                                <div class="file-size">${formatFileSize(file.size)}</div>
+                            </div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="file-btn" data-file-id="${file.id}" data-action="view">👁 ${translations[settings.language].view}</button>
+                            ${settings.downloadEnabled ? `<button class="file-btn" data-file-id="${file.id}" data-action="download">⬇ ${translations[settings.language].download}</button>` : ''}
+                        </div>
+                        ${isImage ? `<div class="file-preview"><img src="${file.content}" alt="${escapeHtml(file.name)}" data-file-id="${file.id}" data-action="view"></div>` : ''}
+                        ${isText && !isImage ? `<div class="file-preview"><pre>${escapeHtml(file.content.substring(0, 1000))}${file.content.length > 1000 ? '...' : ''}</pre></div>` : ''}
+                    </div>
+                `;
+            }
+            
+            function renderMessages() {
+                const display = useLocalOnly ? localMessages : messages;
+                const filtered = filterMessagesByGroup(display);
+                
+                if (!filtered.length) {
+                    elements.messagesArea.innerHTML = `
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                <path d="M8 10h.01M12 10h.01M16 10h.01"/>
+                            </svg>
+                            <p>${translations[settings.language].emptyStateText}</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                let currentDate = null;
+                
+                filtered.forEach((msg, index) => {
+                    const msgDate = formatDate(msg.timestamp);
+                    if (msgDate !== currentDate) {
+                        html += `<div class="date-divider"><span>${msgDate}</span></div>`;
+                        currentDate = msgDate;
+                    }
+                    
+                    if (msg.type === 'system') {
+                        html += `<div class="system-message"><span>${escapeHtml(msg.content)}</span></div>`;
+                    } else {
+                        const isSelf = msg.userId === userProfile.id;
+                        const isLong = msg.content && msg.content.length > 350;
+                        const msgId = `msg-${index}-${Date.now()}`;
+                        const senderAvatar = msg.avatar || null;
+                        const senderName = msg.sender;
+                        const isMentioned = msg.mentions && msg.mentions.includes(userProfile.id);
+                        
+                        html += `
+                            <div class="message-wrapper ${isSelf ? 'self' : ''} ${isMentioned ? 'mentioned' : ''}">
+                                <div class="message-avatar" data-user-id="${msg.userId}" data-user-name="${escapeHtml(senderName)}">
+                                    ${senderAvatar ? `<img src="${senderAvatar}" alt="${escapeHtml(senderName)}">` : senderName.charAt(0).toUpperCase()}
+                                </div>
+                                <div class="message-content-wrapper">
+                                    <div class="message-bubble">
+                                        <div class="message-header">
+                                            <span class="message-sender" data-user-id="${msg.userId}" data-user-name="${escapeHtml(senderName)}">${escapeHtml(senderName)}</span>
+                                            <span class="message-time">${formatTime(msg.timestamp)}</span>
+                                        </div>
+                                        ${msg.content ? `<div class="message-content ${isLong && settings.autoCollapse ? 'collapsed' : ''}" id="${msgId}">${highlightMentions(msg.content)}</div>` : ''}
+                                        ${msg.files ? msg.files.map(f => renderFileAttachment(f)).join('') : ''}
+                                        ${isLong ? `<button class="expand-btn" data-msg="${msgId}">${translations[settings.language].showMore}</button>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+                
+                elements.messagesArea.innerHTML = html;
+                
+                // Add right-click listeners to avatars and names
+                document.querySelectorAll('.message-avatar, .message-sender').forEach(el => {
+                    el.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        const userId = el.dataset.userId;
+                        const userName = el.dataset.userName;
+                        
+                        if (userId && userId !== userProfile.id) {
+                            const user = onlineUsers.get(userId) || { id: userId, name: userName, avatar: null, bio: null };
+                            showContextMenu(e.clientX, e.clientY, user);
+                        }
+                    });
+                });
+                
+                document.querySelectorAll('.expand-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const content = document.getElementById(this.dataset.msg);
+                        if (content.classList.contains('collapsed')) {
+                            content.classList.remove('collapsed');
+                            this.textContent = translations[settings.language].showLess;
+                        } else {
+                            content.classList.add('collapsed');
+                            this.textContent = translations[settings.language].showMore;
+                        }
+                    });
+                });
+                
+                document.querySelectorAll('[data-action="view"]').forEach(el => {
+                    el.addEventListener('click', e => {
+                        e.stopPropagation();
+                        window.viewFile(el.dataset.fileId);
+                    });
+                });
+                
+                document.querySelectorAll('[data-action="download"]').forEach(el => {
+                    el.addEventListener('click', e => {
+                        e.stopPropagation();
+                        window.downloadFile(el.dataset.fileId);
+                    });
+                });
+                
+                document.querySelectorAll('.mention').forEach(el => {
+    el.addEventListener('click', () => {
+        const userName = el.textContent.substring(1);
+        // Find the user in online users first, then check message history
+        let user = Array.from(onlineUsers.values()).find(u => 
+            u.name.toLowerCase() === userName.toLowerCase()
+        );
+        
+        if (!user) {
+            // Try to find user from messages
+            const source = useLocalOnly ? localMessages : messages;
+            const msg = source.find(m => 
+                m.sender && m.sender.toLowerCase() === userName.toLowerCase()
+            );
+            if (msg) {
+                user = {
+                    id: msg.userId,
+                    name: msg.sender,
+                    avatar: msg.avatar,
+                    bio: null,
+                    profileTheme: 'purple'
+                };
+            }
+        }
+        
+        if (user) {
+            showUserProfile(user);
+        }
+    });
+});
+                
+                elements.messagesArea.scrollTop = elements.messagesArea.scrollHeight;
+            }
+            
+            // ============== MESSAGE FUNCTIONS ==============
+            function addMessage(msg) {
+    msg.avatar = userProfile.avatar;
+    
+    // Check for mentions
+    if (msg.content) {
+        msg.mentions = checkForMention(msg.content).map(u => u.id);
+    }
+    
+    // Compress any files before storing
+    if (msg.files && msg.files.length > 0) {
+        msg.files = msg.files.map(f => {
+            // Don't store huge files in memory
+            if (f.content && f.content.length > 100000) {
+                return {
+                    ...f,
+                    content: '[Large file]',
+                    truncated: true
+                };
+            }
+            return f;
+        });
+    }
+    
+    messages.push(msg);
+    localMessages.push(msg);
+    
+    // NO LIMIT - keep all messages!
+    // Messages will only be trimmed if localStorage quota is exceeded
+    
+    saveMessages();
+    renderMessages();
+    renderGroups();
+    if (settings.fileSharing) updateFilesList();
+    
+    // Show notification if mentioned
+    if (msg.mentions && msg.mentions.includes(userProfile.id) && msg.userId !== userProfile.id) {
+        const groupName = currentGroup.name;
+        showNotification(
+            `${msg.sender} ${translations[settings.language].mentionedYou}`,
+            `${translations[settings.language].pingNotification} ${groupName}`,
+            () => {
+                elements.messagesArea.scrollTop = elements.messagesArea.scrollHeight;
+            }
+        );
+    }
+}
+            
+            async function processFiles(files) {
+    const processed = [];
+    for (const file of files) {
+        if (file.size > 1 * 1024 * 1024) { // 1MB limit
+            alert(`File ${file.name} exceeds 1MB limit`);
+            continue;
+        }
+        
+        const content = await new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onload = e => {
+                let result = e.target.result;
+                
+                // Compress images
+                if (file.type.startsWith('image/') && result.length > 50000) {
+                    compressImage(result, (compressed) => {
+                        resolve(compressed);
+                    }, 800, 600, 0.5);
+                } else {
+                    resolve(result);
+                }
+            };
+            
+            if (file.type.startsWith('image/')) {
+                reader.readAsDataURL(file);
+            } else {
+                reader.readAsText(file);
+            }
+        });
+        
+        processed.push({
+            id: Math.random().toString(36).substring(2, 11),
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            content: content
+        });
+    }
+    return processed;
+}
+            
+            async function sendMessage() {
+                const content = elements.messageInput.value.trim();
+                if (!content && !pendingFiles.length) return;
+                
+                const files = settings.fileSharing ? await processFiles(pendingFiles) : [];
+                
+                let messageLanguage = settings.language;
+                if (currentGroup.id === 'en') messageLanguage = 'en';
+                if (currentGroup.id === 'ru') messageLanguage = 'ru';
+                
+                addMessage({
+                    type: 'user',
+                    sender: userProfile.name,
+                    content: content,
+                    files: files,
+                    userId: userProfile.id,
+                    timestamp: Date.now(),
+                    language: messageLanguage,
+                    avatar: userProfile.avatar
+                });
+                
+                elements.messageInput.value = '';
+                elements.messageInput.style.height = 'auto';
+                elements.charCounter.textContent = `0/10000`;
+                clearAllFiles();
+            }
+            
+            // ============== ONLINE FUNCTIONS ==============
+            function updateOnline() {
+                const key = `online_${userProfile.id}`;
+                const userData = {
+                    userId: userProfile.id,
+                    name: userProfile.name,
+                    avatar: userProfile.avatar,
+                    bio: userProfile.bio,
+                    profileTheme: userProfile.profileTheme,
+                    ts: Date.now()
+                };
+                localStorage.setItem(key, JSON.stringify(userData));
+                
+                const now = Date.now();
+                let count = 0;
+                onlineUsers.clear();
+                
+                for (let i = 0; i < localStorage.length; i++) {
+                    const k = localStorage.key(i);
+                    if (k && k.startsWith('online_')) {
+                        try {
+                            const data = JSON.parse(localStorage.getItem(k));
+                            if (now - data.ts < 8000) {
+                                count++;
+                                onlineUsers.set(data.userId, {
+                                    id: data.userId,
+                                    name: data.name,
+                                    avatar: data.avatar,
+                                    bio: data.bio,
+                                    profileTheme: data.profileTheme
+                                });
+                            } else {
+                                localStorage.removeItem(k);
+                            }
+                        } catch (e) {
+                            localStorage.removeItem(k);
+                        }
+                    }
+                }
+                
+                onlineCount = count;
+                updateOnlineDisplay();
+                updateOnlineUsersList();
+            }
+            
+            // ============== WARNING MODAL ==============
+            function showWarningModal(onConfirm) {
+                const t = translations[settings.language];
+                elements.warningMessage.textContent = t.warningMessage;
+                elements.warningConfirm.textContent = t.confirmBtn;
+                elements.warningCancel.textContent = t.cancelBtn;
+                
+                const confirmHandler = () => {
+                    elements.warningModal.classList.remove('open');
+                    onConfirm();
+                    elements.warningConfirm.removeEventListener('click', confirmHandler);
+                    elements.warningCancel.removeEventListener('click', cancelHandler);
+                };
+                
+                const cancelHandler = () => {
+                    elements.warningModal.classList.remove('open');
+                    elements.fileSharingToggle.classList.remove('active');
+                    elements.warningConfirm.removeEventListener('click', confirmHandler);
+                    elements.warningCancel.removeEventListener('click', cancelHandler);
+                };
+                
+                elements.warningConfirm.addEventListener('click', confirmHandler);
+                elements.warningCancel.addEventListener('click', cancelHandler);
+                
+                elements.warningModal.classList.add('open');
+            }
+            
+            // ============== DRAG & DROP ==============
+            function setupDragAndDrop() {
+                const container = document.querySelector('.chat-container');
+                
+                container.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    if (settings.fileSharing) {
+                        elements.dragOverlay.classList.add('active');
+                    }
+                });
+                
+                container.addEventListener('dragleave', () => {
+                    elements.dragOverlay.classList.remove('active');
+                });
+                
+                container.addEventListener('drop', async (e) => {
+                    e.preventDefault();
+                    elements.dragOverlay.classList.remove('active');
+                    
+                    if (!settings.fileSharing) {
+                        alert(settings.language === 'en' ? 'File sharing is disabled' : 'Обмен файлами отключен');
+                        return;
+                    }
+                    
+                    const files = Array.from(e.dataTransfer.files);
+                    if (files.length > 0) {
+                        addFiles(files);
+                    }
+                });
+            }
+            
+            // ============== INITIALIZATION ==============
+            function init() {
+                loadProfile();
+                loadSettings();
+                loadMessages();
+                renderGroups();
+                renderMessages();
+                setupDragAndDrop();
+                
+                // Context menu
+                document.addEventListener('click', () => hideContextMenu());
+                
+                document.querySelectorAll('.context-menu-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const action = item.dataset.action;
+                        if (contextMenuTarget) {
+                            if (action === 'profile') {
+                                showUserProfile(contextMenuTarget);
+                            } else if (action === 'mention') {
+                                insertMention(contextMenuTarget.name);
+                            } else if (action === 'block') {
+                                alert('Block feature coming soon!');
+                            }
+                        }
+                        hideContextMenu();
+                    });
+                });
+                
+                // User profile modal
+                elements.closeUserProfileModal.addEventListener('click', () => {
+                    elements.userProfileModal.classList.remove('open');
+                });
+                
+                elements.userProfileModal.addEventListener('click', (e) => {
+                    if (e.target === elements.userProfileModal) {
+                        elements.userProfileModal.classList.remove('open');
+                    }
+                });
+                
+                // Easter egg toggle
+                elements.easterEggTrigger.addEventListener('click', () => {
+                    elements.projectsMenu.classList.toggle('show');
+                });
+                
+                // Transparency slider
+                elements.transparencySlider.addEventListener('click', (e) => {
+                    const rect = elements.transparencySlider.getBoundingClientRect();
+                    const percentage = Math.max(0, Math.min(100, Math.round(((e.clientX - rect.left) / rect.width) * 100)));
+                    updateTransparency(percentage);
+                    saveSettings();
+                });
+                
+                // Reset ID button
+                elements.resetIdBtn.addEventListener('click', () => {
+                    elements.resetIdModal.classList.add('open');
+                });
+                
+                elements.resetIdConfirm.addEventListener('click', resetUserId);
+                
+                elements.resetIdCancel.addEventListener('click', () => {
+                    elements.resetIdModal.classList.remove('open');
+                });
+                
+                elements.resetIdModal.addEventListener('click', (e) => {
+                    if (e.target === elements.resetIdModal) {
+                        elements.resetIdModal.classList.remove('open');
+                    }
+                });
+                
+                // Mention suggestions
+                elements.messageInput.addEventListener('input', (e) => {
+                    const value = e.target.value;
+                    const cursorPos = e.target.selectionStart;
+                    const textBefore = value.substring(0, cursorPos);
+                    const atIndex = textBefore.lastIndexOf('@');
+                    
+                    if (atIndex !== -1) {
+                        const textAfterAt = textBefore.substring(atIndex + 1);
+                        if (!textAfterAt.includes(' ')) {
+                            mentionStartPos = atIndex;
+                            showMentionSuggestions(textAfterAt);
+                        } else {
+                            elements.mentionSuggestions.classList.remove('show');
+                            mentionStartPos = -1;
+                        }
+                    } else {
+                        elements.mentionSuggestions.classList.remove('show');
+                        mentionStartPos = -1;
+                    }
+                    
+                    elements.messageInput.style.height = 'auto';
+                    elements.messageInput.style.height = Math.min(elements.messageInput.scrollHeight, 100) + 'px';
+                    elements.charCounter.textContent = `${value.length}/10000`;
+                });
+                
+                elements.messageInput.addEventListener('keydown', (e) => {
+                    if (elements.mentionSuggestions.classList.contains('show')) {
+                        if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            selectedMentionIndex = (selectedMentionIndex + 1) % mentionSuggestions.length;
+                            updateMentionSelection();
+                        } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            selectedMentionIndex = (selectedMentionIndex - 1 + mentionSuggestions.length) % mentionSuggestions.length;
+                            updateMentionSelection();
+                        } else if (e.key === 'Enter' || e.key === 'Tab') {
+                            e.preventDefault();
+                            if (mentionSuggestions[selectedMentionIndex]) {
+                                insertMention(mentionSuggestions[selectedMentionIndex].name);
+                            }
+                        } else if (e.key === 'Escape') {
+                            elements.mentionSuggestions.classList.remove('show');
+                            mentionStartPos = -1;
+                        }
+                    } else if (e.key === 'Enter' && !e.shiftKey && settings.enterSend) {
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                });
+                
+                function updateMentionSelection() {
+                    document.querySelectorAll('.mention-suggestion-item').forEach((item, index) => {
+                        item.classList.toggle('active', index === selectedMentionIndex);
+                    });
+                }
+                
+                elements.clearFilesBtn.addEventListener('click', clearAllFiles);
+                
+                elements.profileInfo.addEventListener('click', () => {
+                    elements.displayNameInput.value = userProfile.name;
+                    elements.bioInput.value = userProfile.bio || '';
+                    elements.userIdInput.value = userProfile.id;
+                    updateProfileUI();
+                    renderProfileThemes();
+                    elements.profileModal.classList.add('open');
+                });
+                
+                elements.closeProfileModal.addEventListener('click', () => {
+                    elements.profileModal.classList.remove('open');
+                });
+                
+                elements.profileModal.addEventListener('click', e => {
+                    if (e.target === elements.profileModal) {
+                        elements.profileModal.classList.remove('open');
+                    }
+                });
+                
+                elements.uploadAvatarBtn.addEventListener('click', () => {
+                    elements.avatarInput.click();
+                });
+                
+                elements.avatarInput.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            userProfile.avatar = e.target.result;
+                            updateProfileUI();
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+                
+                elements.saveProfileBtn.addEventListener('click', () => {
+                    const newName = elements.displayNameInput.value.trim();
+                    const newBio = elements.bioInput.value.trim();
+                    if (newName) {
+                        userProfile.name = newName;
+                        userProfile.bio = newBio || '';
+                        saveProfile();
+                        elements.profileModal.classList.remove('open');
+                        renderMessages();
+                    }
+                });
+                
+                elements.settingsBtn.addEventListener('click', () => {
+                    elements.settingsPanel.classList.add('open');
+                    elements.settingsOverlay.classList.add('open');
+                    if (settings.fileSharing) updateFilesList();
+                });
+                
+                elements.closeSettings.addEventListener('click', () => {
+                    elements.settingsPanel.classList.remove('open');
+                    elements.settingsOverlay.classList.remove('open');
+                });
+                
+                elements.settingsOverlay.addEventListener('click', () => {
+                    elements.settingsPanel.classList.remove('open');
+                    elements.settingsOverlay.classList.remove('open');
+                });
+                
+                elements.closeModal.addEventListener('click', () => {
+                    elements.fileModal.classList.remove('open');
+                });
+                
+                elements.fileModal.addEventListener('click', e => {
+                    if (e.target === elements.fileModal) {
+                        elements.fileModal.classList.remove('open');
+                    }
+                });
+                
+                elements.warningModal.addEventListener('click', e => {
+                    if (e.target === elements.warningModal) {
+                        elements.warningModal.classList.remove('open');
+                        elements.fileSharingToggle.classList.remove('active');
+                    }
+                });
+                
+                elements.animationsToggle.addEventListener('click', () => {
+                    settings.animations = !settings.animations;
+                    applySettings();
+                    saveSettings();
+                });
+                
+                elements.bgEffectsToggle.addEventListener('click', () => {
+                    settings.bgEffects = !settings.bgEffects;
+                    applySettings();
+                    saveSettings();
+                });
+                
+                elements.enterSendToggle.addEventListener('click', () => {
+                    settings.enterSend = !settings.enterSend;
+                    applySettings();
+                    saveSettings();
+                });
+                
+                elements.typingToggle.addEventListener('click', () => {
+                    settings.typingIndicator = !settings.typingIndicator;
+                    applySettings();
+                    saveSettings();
+                });
+                
+                elements.autoCollapseToggle.addEventListener('click', () => {
+                    settings.autoCollapse = !settings.autoCollapse;
+                    applySettings();
+                    saveSettings();
+                    renderMessages();
+                });
+                
+                elements.fileSharingToggle.addEventListener('click', function() {
+                    const willBeEnabled = !settings.fileSharing;
+                    
+                    if (willBeEnabled) {
+                        showWarningModal(() => {
+                            settings.fileSharing = true;
+                            applySettings();
+                            saveSettings();
+                        });
+                    } else {
+                        settings.fileSharing = false;
+                        applySettings();
+                        saveSettings();
+                        clearAllFiles();
+                    }
+                });
+                
+                elements.downloadToggle.addEventListener('click', () => {
+                    settings.downloadEnabled = !settings.downloadEnabled;
+                    applySettings();
+                    saveSettings();
+                    renderMessages();
+                });
+                
+                document.querySelectorAll('.lang-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        settings.language = this.dataset.lang;
+                        applySettings();
+                        saveSettings();
+                        renderMessages();
+                        document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                    });
+                });
+                
+                elements.clearChatBtn.addEventListener('click', () => {
+                    if (confirm(settings.language === 'en' ? 'Clear chat history?' : 'Очистить историю чата?')) {
+                        localMessages = [];
+                        useLocalOnly = true;
+                        saveMessages();
+                        renderMessages();
+                        renderGroups();
+                    }
+                });
+                
+                elements.sendButton.addEventListener('click', sendMessage);
+                
+                elements.attachBtn.addEventListener('click', () => elements.fileInput.click());
+                
+                elements.fileInput.addEventListener('change', e => {
+                    const files = Array.from(e.target.files);
+                    if (files.length > 0) {
+                        addFiles(files);
+                    }
+                });
+                
+                elements.messageInput.addEventListener('paste', e => {
+                    if (!settings.fileSharing) return;
+                    
+                    const items = e.clipboardData.items;
+                    for (const item of items) {
+                        if (item.kind === 'file') {
+                            const file = item.getAsFile();
+                            if (file) {
+                                addFiles([file]);
+                            }
+                        }
+                    }
+                });
+                
+                document.addEventListener('paste', e => {
+                    if (!settings.fileSharing) return;
+                    if (e.target === elements.messageInput) return;
+                    
+                    const items = e.clipboardData.items;
+                    for (const item of items) {
+                        if (item.type.startsWith('image/')) {
+                            const file = item.getAsFile();
+                            if (file) {
+                                addFiles([file]);
+                                elements.messageInput.focus();
+                            }
+                        }
+                    }
+                });
+                
+                window.addEventListener('storage', e => {
+                    if (e.key === KEYS.MESSAGES) {
+                        loadMessages();
+                        if (!useLocalOnly) {
+                            renderMessages();
+                            renderGroups();
+                        }
+                        if (settings.fileSharing) updateFilesList();
+                    } else if (e.key && e.key.startsWith('online_')) {
+                        updateOnline();
+                    }
+                });
+
+                // Typing indicator - when user types
+elements.messageInput.addEventListener('input', () => {
+    if (settings.typingIndicator) {
+        throttledTypingUpdate();
+    }
+});
+
+// Clear typing when message is sent
+const originalSendMessage = sendMessage;
+sendMessage = function() {
+    stopTyping();
+    originalSendMessage();
+};
+
+// Clear typing when leaving page
+window.addEventListener('beforeunload', () => {
+    stopTyping();
+});
+
+// Clear typing when switching groups
+const originalRenderGroups = renderGroups;
+renderGroups = function() {
+    stopTyping(); // Clear typing when switching groups
+    originalRenderGroups();
+};
+
+// Update typing indicator periodically
+setInterval(() => {
+    updateTypingIndicator();
+}, 1000);
+
+// Listen for storage changes to update typing
+window.addEventListener('storage', (e) => {
+    if (e.key && e.key.startsWith('typing_')) {
+        updateTypingIndicator();
+    }
+});
+                
+                setInterval(updateOnline, 3000);
+                setInterval(() => {
+                    localStorage.setItem(`online_${userProfile.id}`, JSON.stringify({
+                        userId: userProfile.id,
+                        name: userProfile.name,
+                        avatar: userProfile.avatar,
+                        bio: userProfile.bio,
+                        profileTheme: userProfile.profileTheme,
+                        ts: Date.now()
+                    }));
+                }, 5000);
+                
+                updateOnline();
+            }
+            
+            init();
+        })();
+    </script>
+</body>
+</html>
