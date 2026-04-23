@@ -4239,9 +4239,8 @@ const throttledTypingUpdate = throttle(startTyping, 2000);
     
     for (const file of files) {
         try {
-            // Proper size check using file.size
-            if (file.size > 1 * 1024 * 1024) {
-                alert(`File ${file.name} exceeds 1MB limit`);
+            if (file.size > 1 * 16384 * 16384) {
+                alert(`File ${file.name} exceeds 16MB limit`);
                 continue;
             }
             
@@ -4272,9 +4271,9 @@ async function readAndProcessFile(file) {
             try {
                 let result = e.target.result;
                 
-                // Check if image needs compression based on original file size
+                // Compress images based on original file size
                 if (file.type.startsWith('image/') && file.size > 50000) {
-                    result = await compressImageAsync(result, 800, 600, 0.5);
+                    result = await compressImage(result, 800, 600, 0.5);
                 }
                 
                 resolve(result);
@@ -4293,16 +4292,45 @@ async function readAndProcessFile(file) {
     });
 }
 
-// Convert callback-based compressImage to Promise-based
-function compressImageAsync(dataUrl, width, height, quality) {
+// Built-in image compression function using Canvas
+function compressImage(dataUrl, maxWidth = 800, maxHeight = 600, quality = 0.5) {
     return new Promise((resolve, reject) => {
-        try {
-            compressImage(dataUrl, resolve, width, height, quality);
-            // If compressImage doesn't call resolve synchronously but needs time:
-            // setTimeout(() => reject(new Error('Compression timeout')), 10000);
-        } catch (error) {
-            reject(error);
-        }
+        const img = new Image();
+        
+        img.onload = () => {
+            // Calculate new dimensions while maintaining aspect ratio
+            let { width, height } = img;
+            
+            if (width > maxWidth) {
+                height = (maxWidth / width) * height;
+                width = maxWidth;
+            }
+            
+            if (height > maxHeight) {
+                width = (maxHeight / height) * width;
+                height = maxHeight;
+            }
+            
+            // Create canvas and draw resized image
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Convert to compressed data URL
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+            
+            // Clean up
+            canvas.remove();
+            img.remove();
+            
+            resolve(compressedDataUrl);
+        };
+        
+        img.onerror = () => reject(new Error('Failed to load image for compression'));
+        img.src = dataUrl;
     });
 }
             
