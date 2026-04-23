@@ -4236,43 +4236,74 @@ const throttledTypingUpdate = throttle(startTyping, 2000);
             
             async function processFiles(files) {
     const processed = [];
+    
     for (const file of files) {
-        if (file.size > 1 * 1024 * 1024) { // 1MB limit
-            alert(`File ${file.name} exceeds 1MB limit`);
-            continue;
+        try {
+            // Proper size check using file.size
+            if (file.size > 1 * 1024 * 1024) {
+                alert(`File ${file.name} exceeds 1MB limit`);
+                continue;
+            }
+            
+            const content = await readAndProcessFile(file);
+            
+            processed.push({
+                id: crypto.randomUUID ? crypto.randomUUID() : 
+                    `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                content: content
+            });
+        } catch (error) {
+            console.error(`Error processing ${file.name}:`, error);
+            alert(`Failed to process ${file.name}: ${error.message}`);
         }
+    }
+    
+    return processed;
+}
+
+async function readAndProcessFile(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
         
-        const content = await new Promise(resolve => {
-            const reader = new FileReader();
-            reader.onload = e => {
+        reader.onload = async (e) => {
+            try {
                 let result = e.target.result;
                 
-                // Compress images
-                if (file.type.startsWith('image/') && result.length > 50000) {
-                    compressImage(result, (compressed) => {
-                        resolve(compressed);
-                    }, 800, 600, 0.5);
-                } else {
-                    resolve(result);
+                // Check if image needs compression based on original file size
+                if (file.type.startsWith('image/') && file.size > 50000) {
+                    result = await compressImageAsync(result, 800, 600, 0.5);
                 }
-            };
-            
-            if (file.type.startsWith('image/')) {
-                reader.readAsDataURL(file);
-            } else {
-                reader.readAsText(file);
+                
+                resolve(result);
+            } catch (error) {
+                reject(error);
             }
-        });
+        };
         
-        processed.push({
-            id: Math.random().toString(36).substring(2, 11),
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            content: content
-        });
-    }
-    return processed;
+        reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
+        
+        if (file.type.startsWith('image/')) {
+            reader.readAsDataURL(file);
+        } else {
+            reader.readAsText(file);
+        }
+    });
+}
+
+// Convert callback-based compressImage to Promise-based
+function compressImageAsync(dataUrl, width, height, quality) {
+    return new Promise((resolve, reject) => {
+        try {
+            compressImage(dataUrl, resolve, width, height, quality);
+            // If compressImage doesn't call resolve synchronously but needs time:
+            // setTimeout(() => reject(new Error('Compression timeout')), 10000);
+        } catch (error) {
+            reject(error);
+        }
+    });
 }
             
             async function sendMessage() {
