@@ -4008,70 +4008,83 @@ const throttledTypingUpdate = throttle(startTyping, 2000);
             }
             
             window.viewFile = function(fileId) {
-                const source = useLocalOnly ? localMessages : messages;
-                for (const msg of source) {
-                    if (msg.files) {
-                        const file = msg.files.find(f => f.id === fileId);
-                        if (file) {
-                            elements.modalTitle.textContent = file.name;
-                            if (file.type && file.type.startsWith('image/')) {
-                                elements.modalBody.innerHTML = `<img src="${file.content}" alt="${escapeHtml(file.name)}">`;
-                            } else if (file.type && (file.type.startsWith('text/') || file.name.match(/\.(txt|json|js|css|html|md|log)$/i))) {
-                                elements.modalBody.innerHTML = `<pre>${escapeHtml(file.content)}</pre>`;
-                            } else {
-                                elements.modalBody.innerHTML = `<div style="color:white;text-align:center;padding:40px;">Preview not available</div>`;
-                            }
-                            elements.fileModal.classList.add('open');
-                            return;
-                        }
-                    }
-                }
-            };
-            
-            window.downloadFile = function(fileId) {
-                if (!settings.downloadEnabled) {
-                    alert(settings.language === 'en' ? 'Downloads are disabled' : 'Скачивание отключено');
+    const source = useLocalOnly ? localMessages : messages;
+    for (const msg of source) {
+        if (msg.files) {
+            const file = msg.files.find(f => f.id === fileId);
+            if (file) {
+                if (!file.content || file.content === '[Large file]') {
+                    elements.modalTitle.textContent = file.name;
+                    elements.modalBody.innerHTML = `<div style="color:white;text-align:center;padding:40px;">Preview not available for this file</div>`;
+                    elements.fileModal.classList.add('open');
                     return;
                 }
-                const source = useLocalOnly ? localMessages : messages;
-                for (const msg of source) {
-                    if (msg.files) {
-                        const file = msg.files.find(f => f.id === fileId);
-                        if (file) {
-                            const a = document.createElement('a');
-                            a.href = file.content;
-                            a.download = file.name;
-                            a.click();
-                            return;
-                        }
-                    }
+                elements.modalTitle.textContent = file.name;
+                if (file.type && file.type.startsWith('image/')) {
+                    elements.modalBody.innerHTML = `<img src="${file.content}" alt="${escapeHtml(file.name)}">`;
+                } else if (file.type && (file.type.startsWith('text/') || file.name.match(/\.(txt|json|js|css|html|md|log)$/i))) {
+                    elements.modalBody.innerHTML = `<pre>${escapeHtml(file.content)}</pre>`;
+                } else {
+                    elements.modalBody.innerHTML = `<div style="color:white;text-align:center;padding:40px;">Preview not available</div>`;
                 }
-            };
+                elements.fileModal.classList.add('open');
+                return;
+            }
+        }
+    }
+};
+
+window.downloadFile = function(fileId) {
+    if (!settings.downloadEnabled) {
+        alert(settings.language === 'en' ? 'Downloads are disabled' : 'Скачивание отключено');
+        return;
+    }
+    const source = useLocalOnly ? localMessages : messages;
+    for (const msg of source) {
+        if (msg.files) {
+            const file = msg.files.find(f => f.id === fileId);
+            if (file && file.content && file.content !== '[Large file]') {
+                const a = document.createElement('a');
+                a.href = file.content;
+                a.download = file.name;
+                a.click();
+                return;
+            }
+        }
+    }
+    alert(settings.language === 'en' ? 'File content not available' : 'Содержимое файла недоступно');
+};
             
             // ============== RENDER FUNCTIONS ==============
-            function renderFileAttachment(file) {
-                const isImage = file.type && file.type.startsWith('image/');
-                const isText = file.type && (file.type.startsWith('text/') || file.name.match(/\.(txt|json|js|css|html|md|log)$/i));
-                
-                return `
-                    <div class="file-attachment">
-                        <div class="file-info">
-                            <div class="file-icon">${isImage ? '🖼️' : '📄'}</div>
-                            <div class="file-details">
-                                <div class="file-name">${escapeHtml(file.name)}</div>
-                                <div class="file-size">${formatFileSize(file.size)}</div>
-                            </div>
-                        </div>
-                        <div class="file-actions">
-                            <button class="file-btn" data-file-id="${file.id}" data-action="view">👁 ${translations[settings.language].view}</button>
-                            ${settings.downloadEnabled ? `<button class="file-btn" data-file-id="${file.id}" data-action="download">⬇ ${translations[settings.language].download}</button>` : ''}
-                        </div>
-                        ${isImage ? `<div class="file-preview"><img src="${file.content}" alt="${escapeHtml(file.name)}" data-file-id="${file.id}" data-action="view"></div>` : ''}
-                        ${isText && !isImage ? `<div class="file-preview"><pre>${escapeHtml(file.content.substring(0, 1000))}${file.content.length > 1000 ? '...' : ''}</pre></div>` : ''}
-                    </div>
-                `;
-            }
-            
+function renderFileAttachment(file) {
+    // Safety check - if file is null/undefined, return empty
+    if (!file || !file.name) return '';
+    
+    const isImage = file.type && file.type.startsWith('image/');
+    const isText = file.type && (file.type.startsWith('text/') || (file.name && file.name.match(/\.(txt|json|js|css|html|md|log)$/i)));
+    const hasContent = file.content && typeof file.content === 'string' && file.content.length > 0 && file.content !== '[Large file]';
+    const contentPreview = hasContent ? (file.content.substring(0, 1000) || '') : '';
+    const isTruncated = hasContent && file.content.length > 1000;
+    
+    return `
+        <div class="file-attachment">
+            <div class="file-info">
+                <div class="file-icon">${isImage ? '🖼️' : '📄'}</div>
+                <div class="file-details">
+                    <div class="file-name">${escapeHtml(file.name || 'Unknown file')}</div>
+                    <div class="file-size">${formatFileSize(file.size || 0)}</div>
+                </div>
+            </div>
+            <div class="file-actions">
+                <button class="file-btn" data-file-id="${file.id}" data-action="view">👁 ${translations[settings.language].view}</button>
+                ${settings.downloadEnabled && hasContent ? `<button class="file-btn" data-file-id="${file.id}" data-action="download">⬇ ${translations[settings.language].download}</button>` : ''}
+            </div>
+            ${isImage && hasContent ? `<div class="file-preview"><img src="${file.content}" alt="${escapeHtml(file.name || '')}" data-file-id="${file.id}" data-action="view"></div>` : ''}
+            ${isText && !isImage && hasContent ? `<div class="file-preview"><pre>${escapeHtml(contentPreview)}${isTruncated ? '...' : ''}</pre></div>` : ''}
+            ${!hasContent ? `<div class="file-preview" style="color:rgba(255,255,255,0.4);font-style:italic;padding:10px;">File content unavailable</div>` : ''}
+        </div>
+    `;
+}            
             function renderMessages() {
                 const display = useLocalOnly ? localMessages : messages;
                 const filtered = filterMessagesByGroup(display);
@@ -4121,7 +4134,7 @@ const throttledTypingUpdate = throttle(startTyping, 2000);
                                             <span class="message-time">${formatTime(msg.timestamp)}</span>
                                         </div>
                                         ${msg.content ? `<div class="message-content ${isLong && settings.autoCollapse ? 'collapsed' : ''}" id="${msgId}">${highlightMentions(msg.content)}</div>` : ''}
-                                        ${msg.files ? msg.files.map(f => renderFileAttachment(f)).join('') : ''}
+                                        ${msg.files && Array.isArray(msg.files) ? msg.files.filter(f => f && f.name).map(f => renderFileAttachment(f)).join('') : ''}
                                         ${isLong ? `<button class="expand-btn" data-msg="${msgId}">${translations[settings.language].showMore}</button>` : ''}
                                     </div>
                                 </div>
@@ -4377,49 +4390,59 @@ function compressImage(dataUrl, maxWidth = 800, maxHeight = 600, quality = 0.5) 
             }
             
             // ============== ONLINE FUNCTIONS ==============
-            function updateOnline() {
-                const key = `online_${userProfile.id}`;
-                const userData = {
-                    userId: userProfile.id,
-                    name: userProfile.name,
-                    avatar: userProfile.avatar,
-                    bio: userProfile.bio,
-                    profileTheme: userProfile.profileTheme,
-                    ts: Date.now()
-                };
-                localStorage.setItem(key, JSON.stringify(userData));
-                
-                const now = Date.now();
-                let count = 0;
-                onlineUsers.clear();
-                
-                for (let i = 0; i < localStorage.length; i++) {
-                    const k = localStorage.key(i);
-                    if (k && k.startsWith('online_')) {
-                        try {
-                            const data = JSON.parse(localStorage.getItem(k));
-                            if (now - data.ts < 8000) {
-                                count++;
-                                onlineUsers.set(data.userId, {
-                                    id: data.userId,
-                                    name: data.name,
-                                    avatar: data.avatar,
-                                    bio: data.bio,
-                                    profileTheme: data.profileTheme
-                                });
-                            } else {
-                                localStorage.removeItem(k);
-                            }
-                        } catch (e) {
-                            localStorage.removeItem(k);
-                        }
-                    }
-                }
-                
-                onlineCount = count;
-                updateOnlineDisplay();
-                updateOnlineUsersList();
+                        function updateOnline() {
+    // Push this user's online status to Firebase
+    const userData = {
+        userId: userProfile.id,
+        name: userProfile.name,
+        avatar: userProfile.avatar,
+        bio: userProfile.bio,
+        profileTheme: userProfile.profileTheme,
+        ts: firebase.database.ServerValue.TIMESTAMP
+    };
+    
+    // Set this user as online
+    fbDatabase.ref(`online/${userProfile.id}`).set(userData);
+    
+    // Remove user when they disconnect
+    fbDatabase.ref(`online/${userProfile.id}`).onDisconnect().remove();
+}
+
+function cleanupOldOnlineData() {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('online_')) {
+            localStorage.removeItem(key);
+        }
+    }
+}
+
+// Listen for online users changes from Firebase
+function listenForOnlineUsers() {
+    fbDatabase.ref('online').on('value', (snapshot) => {
+        const users = snapshot.val() || {};
+        onlineUsers.clear();
+        let count = 0;
+        
+        Object.values(users).forEach(user => {
+            onlineUsers.set(user.userId, {
+                id: user.userId,
+                name: user.name,
+                avatar: user.avatar,
+                bio: user.bio,
+                profileTheme: user.profileTheme
+            });
+            if (user.userId !== userProfile.id) {
+                count++;
             }
+        });
+        
+        // Count everyone (including self) for total
+        onlineCount = Object.keys(users).length;
+        updateOnlineDisplay();
+        updateOnlineUsersList();
+    });
+}
             
             // ============== WARNING MODAL ==============
             function showWarningModal(onConfirm) {
@@ -4889,19 +4912,15 @@ window.addEventListener('storage', (e) => {
     }
 });
                 
-                setInterval(updateOnline, 3000);
-                setInterval(() => {
-                    localStorage.setItem(`online_${userProfile.id}`, JSON.stringify({
-                        userId: userProfile.id,
-                        name: userProfile.name,
-                        avatar: userProfile.avatar,
-                        bio: userProfile.bio,
-                        profileTheme: userProfile.profileTheme,
-                        ts: Date.now()
-                    }));
-                }, 5000);
-                
+                // Firebase online presence
                 updateOnline();
+                listenForOnlineUsers();
+                cleanupOldOnlineData();
+                
+                // Keep alive - update timestamp every 60 seconds
+                setInterval(() => {
+                    fbDatabase.ref(`online/${userProfile.id}/ts`).set(firebase.database.ServerValue.TIMESTAMP);
+                }, 60000);
             }
             
             init();
